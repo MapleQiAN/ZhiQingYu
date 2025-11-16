@@ -25,20 +25,44 @@
                 class="warm-menu"
               />
               <div class="divider"></div>
-              <n-select
-                v-model:value="currentLocale"
+              <n-dropdown
+                trigger="click"
                 :options="localeOptions"
-                size="small"
-                class="locale-select"
-                @update:value="handleLocaleChange"
-              />
+                @select="handleLocaleSelect"
+                placement="bottom-end"
+                :value="currentLocale"
+              >
+                <n-button
+                  quaternary
+                  circle
+                  size="medium"
+                  class="locale-button"
+                  :title="$t('nav.language')"
+                >
+                  <template #icon>
+                    <span class="locale-icon">{{ currentLocale === 'zh' ? '🇨🇳' : '🇺🇸' }}</span>
+                  </template>
+                </n-button>
+              </n-dropdown>
+              <n-button
+                quaternary
+                circle
+                size="medium"
+                class="settings-button"
+                @click="router.push('/settings')"
+                :title="$t('nav.settings')"
+              >
+                <template #icon>
+                  <span class="settings-icon">⚙️</span>
+                </template>
+              </n-button>
             </div>
           </div>
           <div class="header-decoration"></div>
         </div>
       </n-layout-header>
       <n-layout-content>
-        <div class="max-w-7xl mx-auto px-6 py-10">
+        <div class="content-wrapper">
           <slot />
         </div>
       </n-layout-content>
@@ -47,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
@@ -55,9 +79,10 @@ import {
   NLayoutHeader,
   NLayoutContent,
   NMenu,
-  NSelect,
+  NButton,
+  NDropdown,
 } from 'naive-ui'
-import type { MenuOption } from 'naive-ui'
+import type { MenuOption, DropdownOption } from 'naive-ui'
 
 const router = useRouter()
 const route = useRoute()
@@ -65,10 +90,10 @@ const { locale, t } = useI18n()
 
 const currentLocale = ref(locale.value)
 
-const localeOptions = [
-  { label: '中文', value: 'zh' },
-  { label: 'English', value: 'en' },
-]
+// 同步 locale 变化
+watch(() => locale.value, (newLocale) => {
+  currentLocale.value = newLocale
+})
 
 const menuOptions = computed<MenuOption[]>(() => [
   {
@@ -85,15 +110,47 @@ const menuOptions = computed<MenuOption[]>(() => [
   },
 ])
 
-const activeKey = computed(() => route.path)
+const localeOptions = computed<DropdownOption[]>(() => {
+  const labels = {
+    zh: '中文',
+    en: 'English',
+  }
+  return [
+    {
+      label: () => h('span', { style: 'display: flex; align-items: center; gap: 8px;' }, [
+        h('span', { style: 'font-size: 18px;' }, '🇨🇳'),
+        h('span', labels.zh),
+      ]),
+      key: 'zh',
+    },
+    {
+      label: () => h('span', { style: 'display: flex; align-items: center; gap: 8px;' }, [
+        h('span', { style: 'font-size: 18px;' }, '🇺🇸'),
+        h('span', labels.en),
+      ]),
+      key: 'en',
+    },
+  ]
+})
+
+const activeKey = computed(() => {
+  const path = route.path
+  // 确保路径匹配菜单项的 key
+  if (path === '/' || path.startsWith('/chat')) {
+    return '/'
+  }
+  return path
+})
 
 const handleMenuSelect = (key: string) => {
   router.push(key)
 }
 
-const handleLocaleChange = (value: string) => {
-  locale.value = value
-  localStorage.setItem('locale', value)
+const handleLocaleSelect = (key: string | number) => {
+  const newLocale = key as string
+  currentLocale.value = newLocale
+  locale.value = newLocale
+  localStorage.setItem('locale', newLocale)
 }
 </script>
 
@@ -142,8 +199,8 @@ const handleLocaleChange = (value: string) => {
 
 .header-container {
   position: relative;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   padding: 0 2rem;
 }
 
@@ -342,34 +399,74 @@ const handleLocaleChange = (value: string) => {
   box-shadow: 0 2px 8px rgba(255, 182, 193, 0.15);
 }
 
-.locale-select {
-  min-width: 100px;
-}
-
-.locale-select :deep(.n-base-selection) {
-  border-color: rgba(255, 182, 193, 0.3) !important;
-  border-radius: 12px !important;
+.locale-button,
+.settings-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50% !important;
   background: rgba(255, 255, 255, 0.6) !important;
   backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 182, 193, 0.3) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 6px rgba(255, 182, 193, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.locale-select :deep(.n-base-selection:hover) {
+.locale-button:hover,
+.settings-button:hover {
+  background: rgba(255, 255, 255, 0.8) !important;
   border-color: rgba(255, 182, 193, 0.5) !important;
   box-shadow: 0 4px 12px rgba(255, 182, 193, 0.2);
-  background: rgba(255, 255, 255, 0.8) !important;
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.05);
 }
 
-.locale-select :deep(.n-base-selection--active) {
-  border-color: rgba(255, 182, 193, 0.6) !important;
-  box-shadow: 0 4px 16px rgba(255, 182, 193, 0.25);
+.locale-icon,
+.settings-icon {
+  font-size: 20px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(255, 182, 193, 0.3));
+  transition: transform 0.3s ease;
 }
 
-.locale-select :deep(.n-base-selection-label) {
-  color: #8B6F7E;
-  font-weight: 500;
+.locale-button:hover .locale-icon,
+.settings-button:hover .settings-icon {
+  transform: rotate(15deg) scale(1.1);
+}
+
+/* 语言下拉菜单样式 */
+:deep(.n-dropdown-menu) {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 182, 193, 0.3) !important;
+  border-radius: 12px !important;
+  box-shadow: 
+    0 8px 24px rgba(255, 182, 193, 0.2),
+    0 2px 8px rgba(255, 182, 193, 0.1) !important;
+  padding: 4px !important;
+  margin-top: 8px !important;
+}
+
+:deep(.n-dropdown-option) {
+  padding: 10px 16px !important;
+  border-radius: 8px !important;
+  margin: 2px 0 !important;
+  transition: all 0.2s ease !important;
+  color: #8B6F7E !important;
+  font-weight: 500 !important;
+}
+
+:deep(.n-dropdown-option:hover) {
+  background: linear-gradient(135deg, rgba(255, 182, 193, 0.15) 0%, rgba(255, 218, 185, 0.15) 100%) !important;
+  color: #D9779F !important;
+  transform: translateX(2px);
+}
+
+:deep(.n-dropdown-option--selected) {
+  background: linear-gradient(135deg, rgba(255, 182, 193, 0.25) 0%, rgba(255, 218, 185, 0.25) 100%) !important;
+  color: #D9779F !important;
+  font-weight: 600 !important;
 }
 
 .header-decoration {
@@ -389,7 +486,23 @@ const handleLocaleChange = (value: string) => {
   opacity: 0.6;
 }
 
+.content-wrapper {
+  width: 100%;
+  margin: 0;
+  padding: 2rem 1.5rem;
+  min-height: calc(100vh - 100px);
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
 /* 响应式设计 */
+@media (max-width: 1200px) {
+  .content-wrapper {
+    padding: 1.5rem 1rem;
+  }
+}
+
 @media (max-width: 768px) {
   .header-container {
     padding: 0 1rem;
@@ -397,6 +510,12 @@ const handleLocaleChange = (value: string) => {
   
   .header-content {
     padding: 1rem 0;
+    flex-wrap: wrap;
+  }
+  
+  .logo-section {
+    flex: 1;
+    min-width: 200px;
   }
   
   .app-logo {
@@ -408,12 +527,41 @@ const handleLocaleChange = (value: string) => {
   }
   
   .nav-section {
-    gap: 1rem;
+    gap: 0.75rem;
+    width: 100%;
+    margin-top: 0.75rem;
+    justify-content: space-between;
   }
   
   .warm-menu :deep(.n-menu-item) {
     padding: 8px 12px;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+  }
+  
+  .content-wrapper {
+    padding: 1rem 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-title {
+    font-size: 1.25rem;
+  }
+  
+  .warm-menu :deep(.n-menu-item) {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+  
+  .locale-button,
+  .settings-button {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .locale-icon,
+  .settings-icon {
+    font-size: 18px;
   }
 }
 </style>
