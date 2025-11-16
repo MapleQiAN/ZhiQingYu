@@ -1,0 +1,9 @@
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+sqlalchemy==2.0.25
+pydantic==2.5.4
+python-dotenv==1.0.0
+openai==1.12.0
+anthropic==0.18.1
+httpx==0.26.0
+
