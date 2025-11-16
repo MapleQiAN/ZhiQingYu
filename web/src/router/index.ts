@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Chat from '../views/Chat.vue'
 import Journal from '../views/Journal.vue'
 import Overview from '../views/Overview.vue'
+import Settings from '../views/Settings.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -20,6 +21,11 @@ const router = createRouter({
       path: '/overview',
       name: 'Overview',
       component: Overview,
+    },
+    {
+      path: '/settings',
+      name: 'Settings',
+      component: Settings,
     },
   ],
 })
