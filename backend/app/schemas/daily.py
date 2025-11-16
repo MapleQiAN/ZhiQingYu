@@ -2,8 +2,11 @@
 日记相关的Pydantic模型
 """
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from datetime import date
+
+if TYPE_CHECKING:
+    from app.schemas.message import MessageItem
 
 
 class DailySummaryItem(BaseModel):
