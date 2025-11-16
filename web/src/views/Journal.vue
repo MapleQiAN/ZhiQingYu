@@ -280,11 +280,26 @@ const formatTime = (dateStr: string) => {
 }
 
 .timeline-card {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid rgba(255, 182, 193, 0.2) !important;
-  border-radius: 20px !important;
-  box-shadow: 0 4px 20px rgba(255, 182, 193, 0.1) !important;
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(255, 182, 193, 0.25) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 4px 24px rgba(255, 182, 193, 0.12) !important;
+  backdrop-filter: blur(20px);
+  transition: all 0.3s ease;
+  outline: none !important;
+}
+
+.timeline-card :deep(.n-card) {
+  outline: none !important;
+  border: none !important;
+}
+
+.timeline-card :deep(.n-card__content) {
+  outline: none !important;
+}
+
+.timeline-card:hover {
+  box-shadow: 0 6px 32px rgba(255, 182, 193, 0.18) !important;
 }
 
 .card-header {
@@ -343,26 +358,28 @@ const formatTime = (dateStr: string) => {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
-  padding: 1rem;
-  margin-bottom: 0.5rem;
-  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 0.75rem;
+  border-radius: 18px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: rgba(255, 250, 245, 0.5);
+  background: rgba(255, 250, 245, 0.6);
   border: 2px solid transparent;
   position: relative;
 }
 
 .timeline-item:hover {
-  background: rgba(255, 245, 245, 0.7);
-  transform: translateX(4px);
-  border-color: rgba(255, 182, 193, 0.3);
+  background: rgba(255, 245, 245, 0.8);
+  transform: translateX(6px);
+  border-color: rgba(255, 182, 193, 0.35);
+  box-shadow: 0 4px 16px rgba(255, 182, 193, 0.15);
 }
 
 .timeline-item-active {
-  background: linear-gradient(135deg, rgba(255, 182, 193, 0.15) 0%, rgba(255, 218, 185, 0.15) 100%);
-  border-color: rgba(255, 182, 193, 0.4);
-  box-shadow: 0 4px 12px rgba(255, 182, 193, 0.2);
+  background: linear-gradient(135deg, rgba(255, 182, 193, 0.2) 0%, rgba(255, 218, 185, 0.2) 100%);
+  border-color: rgba(255, 182, 193, 0.45);
+  box-shadow: 0 6px 20px rgba(255, 182, 193, 0.25);
+  transform: translateX(4px);
 }
 
 .timeline-dot-wrapper {
@@ -412,12 +429,27 @@ const formatTime = (dateStr: string) => {
 }
 
 .detail-card {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid rgba(255, 182, 193, 0.2) !important;
-  border-radius: 20px !important;
-  box-shadow: 0 4px 20px rgba(255, 182, 193, 0.1) !important;
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(255, 182, 193, 0.25) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 4px 24px rgba(255, 182, 193, 0.12) !important;
+  backdrop-filter: blur(20px);
   min-height: 600px;
+  transition: all 0.3s ease;
+  outline: none !important;
+}
+
+.detail-card :deep(.n-card) {
+  outline: none !important;
+  border: none !important;
+}
+
+.detail-card :deep(.n-card__content) {
+  outline: none !important;
+}
+
+.detail-card:hover {
+  box-shadow: 0 6px 32px rgba(255, 182, 193, 0.18) !important;
 }
 
 .detail-content {
@@ -512,18 +544,20 @@ const formatTime = (dateStr: string) => {
 }
 
 .topic-tag {
-  background: linear-gradient(135deg, rgba(255, 182, 193, 0.15) 0%, rgba(255, 218, 185, 0.15) 100%) !important;
-  border: 1px solid rgba(255, 182, 193, 0.3) !important;
+  background: linear-gradient(135deg, rgba(255, 182, 193, 0.2) 0%, rgba(255, 218, 185, 0.2) 100%) !important;
+  border: 1px solid rgba(255, 182, 193, 0.35) !important;
   color: #8B6F7E !important;
-  border-radius: 16px !important;
-  padding: 6px 14px !important;
+  border-radius: 18px !important;
+  padding: 8px 16px !important;
   font-weight: 500 !important;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(255, 182, 193, 0.1);
 }
 
 .topic-tag:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(255, 182, 193, 0.2);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(255, 182, 193, 0.25);
+  border-color: rgba(255, 182, 193, 0.5) !important;
 }
 
 .messages-section {
@@ -546,11 +580,12 @@ const formatTime = (dateStr: string) => {
 }
 
 .message-card {
-  padding: 1.25rem;
-  border-radius: 16px;
-  transition: all 0.3s ease;
+  padding: 1.5rem;
+  border-radius: 18px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-left: 4px solid;
-  animation: slideIn 0.3s ease;
+  animation: slideIn 0.4s ease;
+  box-shadow: 0 2px 8px rgba(255, 182, 193, 0.08);
 }
 
 @keyframes slideIn {
@@ -575,8 +610,8 @@ const formatTime = (dateStr: string) => {
 }
 
 .message-card:hover {
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(255, 182, 193, 0.15);
+  transform: translateX(6px);
+  box-shadow: 0 6px 20px rgba(255, 182, 193, 0.2);
 }
 
 .message-header {
