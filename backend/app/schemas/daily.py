@@ -29,5 +29,4 @@ class DailyDetailResponse(BaseModel):
     main_emotion: Optional[str] = None
     avg_intensity: Optional[float] = None
     main_topics: Optional[list[str]] = None
-    messages: list[MessageItem] = []
-
+    messages: list["MessageItem"] = []
