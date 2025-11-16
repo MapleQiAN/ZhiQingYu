@@ -11,7 +11,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    host: '127.0.0.1', // 使用 IPv4 避免 IPv6 权限问题
+    port: 5525,
     proxy: {
       '/api': {
         target: process.env.VITE_API_URL || 'http://localhost:8000',
