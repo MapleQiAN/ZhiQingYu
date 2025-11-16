@@ -39,12 +39,49 @@ const dateLocale = computed(() => {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background-color: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: linear-gradient(135deg, #FFF9F5 0%, #FFF5ED 50%, #FFF0E6 100%);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #4A4A4A;
 }
 
 #app {
   min-height: 100vh;
+  position: relative;
+}
+
+/* 优化滚动条样式 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 182, 193, 0.05);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 182, 193, 0.3);
+  border-radius: 10px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 182, 193, 0.5);
+}
+
+/* 优化选择文本样式 */
+::selection {
+  background: rgba(255, 182, 193, 0.3);
+  color: #8B6F7E;
+}
+
+::-moz-selection {
+  background: rgba(255, 182, 193, 0.3);
+  color: #8B6F7E;
 }
 </style>
 

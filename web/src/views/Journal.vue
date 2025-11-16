@@ -2,37 +2,39 @@
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <!-- 左侧：时间轴 -->
     <div class="md:col-span-1">
-      <n-card>
-        <h2 class="text-lg font-semibold mb-4">{{ $t('journal.last30Days') }}</h2>
-        <div class="space-y-2 max-h-[600px] overflow-y-auto">
-          <div v-if="dailyList.length === 0" class="text-sm text-gray-500 text-center py-8">
-            {{ $t('common.noData') }}
+      <n-card class="timeline-card">
+        <div class="card-header">
+          <h2 class="card-title">{{ $t('journal.last30Days') }}</h2>
+        </div>
+        <div class="timeline-container">
+          <div v-if="dailyList.length === 0" class="empty-timeline">
+            <div class="empty-icon">📅</div>
+            <p class="empty-text">{{ $t('common.noData') }}</p>
           </div>
           <div
             v-for="item in dailyList"
             :key="item.date"
             :class="[
-              'w-full text-left p-3 rounded-lg transition-colors cursor-pointer',
-              selectedDate === item.date
-                ? 'bg-blue-50 border-2 border-blue-500'
-                : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent',
+              'timeline-item',
+              selectedDate === item.date ? 'timeline-item-active' : '',
             ]"
             @click="setSelectedDate(item.date)"
           >
-            <div class="flex items-center space-x-3">
+            <div class="timeline-dot-wrapper">
               <div
-                :class="['w-4 h-4 rounded-full', getEmotionColor(item.main_emotion)]"
+                class="timeline-dot"
+                :style="{ backgroundColor: getEmotionColorHex(item.main_emotion) }"
               />
-              <div class="flex-1">
-                <div class="text-sm font-medium text-gray-900">
-                  {{ formatDate(item.date) }}
-                </div>
-                <div class="text-xs text-gray-500">
-                  {{ getEmotionLabel(item.main_emotion) }}
-                  <span v-if="item.avg_intensity">
-                    · {{ $t('journal.avgIntensity') }} {{ item.avg_intensity.toFixed(1) }}
-                  </span>
-                </div>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-date">
+                {{ formatDate(item.date) }}
+              </div>
+              <div class="timeline-emotion">
+                <span class="emotion-label">{{ getEmotionLabel(item.main_emotion) }}</span>
+                <span v-if="item.avg_intensity" class="intensity-badge">
+                  {{ item.avg_intensity.toFixed(1) }}
+                </span>
               </div>
             </div>
           </div>
@@ -42,34 +44,36 @@
 
     <!-- 右侧：详情 -->
     <div class="md:col-span-2">
-      <n-card>
+      <n-card class="detail-card">
         <n-spin :show="loading">
-          <div v-if="detail">
-            <div class="mb-6">
-              <h2 class="text-xl font-semibold mb-2">
+          <div v-if="detail" class="detail-content">
+            <div class="detail-header">
+              <h2 class="detail-title">
                 {{ formatDateFull(detail.date) }}
               </h2>
-              <p v-if="detail.summary_text" class="text-gray-700 mb-4">
+              <div class="detail-meta">
+                <div class="meta-item">
+                  <span class="meta-label">{{ $t('journal.mainEmotion') }}</span>
+                  <span class="meta-value emotion-highlight">
+                    {{ getEmotionLabel(detail.main_emotion) }}
+                  </span>
+                </div>
+                <div v-if="detail.avg_intensity" class="meta-item">
+                  <span class="meta-label">{{ $t('journal.avgIntensity') }}</span>
+                  <span class="meta-value">{{ detail.avg_intensity.toFixed(1) }}</span>
+                </div>
+              </div>
+              <p v-if="detail.summary_text" class="summary-text">
                 {{ detail.summary_text }}
               </p>
-              <div class="flex items-center space-x-4 text-sm">
-                <span class="text-gray-600">
-                  {{ $t('journal.mainEmotion') }}:
-                  <span class="font-medium">{{ getEmotionLabel(detail.main_emotion) }}</span>
-                </span>
-                <span v-if="detail.avg_intensity" class="text-gray-600">
-                  {{ $t('journal.avgIntensity') }}:
-                  <span class="font-medium">{{ detail.avg_intensity.toFixed(1) }}</span>
-                </span>
-              </div>
-              <div v-if="detail.main_topics && detail.main_topics.length > 0" class="mt-4">
-                <span class="text-sm text-gray-600">{{ $t('journal.topics') }}: </span>
-                <div class="flex flex-wrap gap-2 mt-2">
+              <div v-if="detail.main_topics && detail.main_topics.length > 0" class="topics-section">
+                <span class="topics-label">{{ $t('journal.topics') }}</span>
+                <div class="topics-list">
                   <n-tag
                     v-for="(topic, index) in detail.main_topics"
                     :key="index"
-                    type="info"
-                    size="small"
+                    class="topic-tag"
+                    size="medium"
                   >
                     {{ topic }}
                   </n-tag>
@@ -77,38 +81,39 @@
               </div>
             </div>
 
-            <div v-if="detail.messages && detail.messages.length > 0">
-              <h3 class="text-lg font-semibold mb-4">{{ $t('journal.representativeMessages') }}</h3>
-              <div class="space-y-4">
+            <div v-if="detail.messages && detail.messages.length > 0" class="messages-section">
+              <h3 class="section-title">{{ $t('journal.representativeMessages') }}</h3>
+              <div class="messages-list">
                 <div
                   v-for="msg in detail.messages"
                   :key="msg.id"
                   :class="[
-                    'p-4 rounded-lg border-l-4',
-                    msg.role === 'user'
-                      ? 'bg-blue-50 border-blue-500'
-                      : 'bg-gray-50 border-gray-300',
+                    'message-card',
+                    msg.role === 'user' ? 'message-user' : 'message-assistant',
                   ]"
                 >
-                  <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm font-medium text-gray-700">
+                  <div class="message-header">
+                    <span class="message-role">
                       {{ msg.role === 'user' ? $t('journal.you') : $t('journal.assistant') }}
                     </span>
-                    <span class="text-xs text-gray-500">
+                    <span class="message-time">
                       {{ formatTime(msg.created_at) }}
                     </span>
                   </div>
-                  <p class="text-gray-900">{{ msg.content }}</p>
-                  <div v-if="msg.emotion" class="mt-2 text-xs text-gray-500">
-                    {{ getEmotionLabel(msg.emotion) }}
-                    <span v-if="msg.intensity"> · {{ $t('journal.avgIntensity') }} {{ msg.intensity }}</span>
+                  <p class="message-body">{{ msg.content }}</p>
+                  <div v-if="msg.emotion" class="message-emotion">
+                    <span class="emotion-indicator">{{ getEmotionLabel(msg.emotion) }}</span>
+                    <span v-if="msg.intensity" class="intensity-indicator">
+                      {{ msg.intensity }}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <div v-else class="text-center py-12 text-gray-500">
-            {{ $t('journal.selectDate') }}
+          <div v-else class="empty-detail">
+            <div class="empty-icon-large">📔</div>
+            <p class="empty-text-large">{{ $t('journal.selectDate') }}</p>
           </div>
         </n-spin>
       </n-card>
@@ -211,6 +216,21 @@ const getEmotionColor = (emotion: string | null) => {
   return colors[emotion] || 'bg-gray-200'
 }
 
+const getEmotionColorHex = (emotion: string | null) => {
+  if (!emotion) return '#E0E0E0'
+  const colors: Record<string, string> = {
+    joy: '#FFD4A3',
+    sadness: '#B3D9FF',
+    anxiety: '#FFB3BA',
+    anger: '#FF9F9F',
+    tired: '#D4B3FF',
+    neutral: '#E0E0E0',
+    relief: '#B3FFB3',
+    calm: '#B3E5D1',
+  }
+  return colors[emotion] || '#E0E0E0'
+}
+
 const getEmotionLabel = (emotion: string | null) => {
   if (!emotion) return t('emotions.none')
   const emotionKey = emotion as keyof typeof import('@/i18n/zh').default.emotions
@@ -259,20 +279,373 @@ const formatTime = (dateStr: string) => {
   }
 }
 
-.space-y-2 > * + * {
-  margin-top: 0.5rem;
+.timeline-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(255, 182, 193, 0.2) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 4px 20px rgba(255, 182, 193, 0.1) !important;
+  backdrop-filter: blur(10px);
 }
 
-.space-y-4 > * + * {
-  margin-top: 1rem;
+.card-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 182, 193, 0.15);
 }
 
-.space-x-3 > * + * {
-  margin-left: 0.75rem;
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #D9779F 0%, #C97A9A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
 }
 
-.space-x-4 > * + * {
-  margin-left: 1rem;
+.timeline-container {
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.timeline-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.timeline-container::-webkit-scrollbar-track {
+  background: rgba(255, 182, 193, 0.05);
+  border-radius: 10px;
+}
+
+.timeline-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 182, 193, 0.3);
+  border-radius: 10px;
+}
+
+.empty-timeline {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #B8A8A8;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  opacity: 0.5;
+  margin-bottom: 1rem;
+}
+
+.empty-text {
+  font-size: 0.9rem;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 250, 245, 0.5);
+  border: 2px solid transparent;
+  position: relative;
+}
+
+.timeline-item:hover {
+  background: rgba(255, 245, 245, 0.7);
+  transform: translateX(4px);
+  border-color: rgba(255, 182, 193, 0.3);
+}
+
+.timeline-item-active {
+  background: linear-gradient(135deg, rgba(255, 182, 193, 0.15) 0%, rgba(255, 218, 185, 0.15) 100%);
+  border-color: rgba(255, 182, 193, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 182, 193, 0.2);
+}
+
+.timeline-dot-wrapper {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  border: 2px solid white;
+}
+
+.timeline-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.timeline-date {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #8B6F7E;
+  margin-bottom: 0.25rem;
+}
+
+.timeline-emotion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.emotion-label {
+  font-size: 0.85rem;
+  color: #A68A8A;
+}
+
+.intensity-badge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  background: rgba(255, 182, 193, 0.2);
+  border-radius: 10px;
+  color: #8B6F7E;
+  font-weight: 500;
+}
+
+.detail-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(255, 182, 193, 0.2) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 4px 20px rgba(255, 182, 193, 0.1) !important;
+  backdrop-filter: blur(10px);
+  min-height: 600px;
+}
+
+.detail-content {
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.detail-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 182, 193, 0.15);
+}
+
+.detail-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #D9779F 0%, #C97A9A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 1rem 0;
+}
+
+.detail-meta {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.meta-label {
+  font-size: 0.9rem;
+  color: #A68A8A;
+}
+
+.meta-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #8B6F7E;
+}
+
+.emotion-highlight {
+  padding: 4px 12px;
+  background: linear-gradient(135deg, rgba(255, 182, 193, 0.15) 0%, rgba(255, 218, 185, 0.15) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 182, 193, 0.3);
+}
+
+.summary-text {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #6B5A6B;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: rgba(255, 250, 245, 0.6);
+  border-radius: 12px;
+  border-left: 3px solid rgba(255, 182, 193, 0.4);
+}
+
+.topics-section {
+  margin-top: 1.5rem;
+}
+
+.topics-label {
+  display: block;
+  font-size: 0.9rem;
+  color: #A68A8A;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+.topics-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.topic-tag {
+  background: linear-gradient(135deg, rgba(255, 182, 193, 0.15) 0%, rgba(255, 218, 185, 0.15) 100%) !important;
+  border: 1px solid rgba(255, 182, 193, 0.3) !important;
+  color: #8B6F7E !important;
+  border-radius: 16px !important;
+  padding: 6px 14px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease;
+}
+
+.topic-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(255, 182, 193, 0.2);
+}
+
+.messages-section {
+  margin-top: 2rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #8B6F7E;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 182, 193, 0.15);
+}
+
+.messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.message-card {
+  padding: 1.25rem;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  border-left: 4px solid;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.message-user {
+  background: linear-gradient(135deg, rgba(255, 182, 193, 0.1) 0%, rgba(255, 218, 185, 0.1) 100%);
+  border-left-color: #FFB6C1;
+}
+
+.message-assistant {
+  background: rgba(255, 250, 245, 0.6);
+  border-left-color: rgba(255, 182, 193, 0.3);
+}
+
+.message-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(255, 182, 193, 0.15);
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.message-role {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #8B6F7E;
+}
+
+.message-time {
+  font-size: 0.8rem;
+  color: #B8A8A8;
+}
+
+.message-body {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #4A4A4A;
+  margin: 0;
+}
+
+.message-emotion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 182, 193, 0.1);
+}
+
+.emotion-indicator {
+  font-size: 0.8rem;
+  padding: 3px 10px;
+  background: rgba(255, 182, 193, 0.15);
+  border-radius: 10px;
+  color: #8B6F7E;
+  font-weight: 500;
+}
+
+.intensity-indicator {
+  font-size: 0.75rem;
+  color: #B8A8A8;
+}
+
+.empty-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5rem 1rem;
+  color: #B8A8A8;
+  min-height: 400px;
+}
+
+.empty-icon-large {
+  font-size: 5rem;
+  opacity: 0.5;
+  margin-bottom: 1.5rem;
+  filter: drop-shadow(0 4px 8px rgba(255, 182, 193, 0.2));
+}
+
+.empty-text-large {
+  font-size: 1.1rem;
 }
 </style>
 
