@@ -73,11 +73,44 @@ export interface EmotionStatsOverview {
   top_topics: Array<{ topic: string; count: number }>
 }
 
+export interface SessionItem {
+  id: string
+  title: string | null
+  created_at: string
+  latest_message_at: string | null
+  preview: string | null
+}
+
+export interface SessionListResponse {
+  sessions: SessionItem[]
+}
+
+export interface SessionMessagesResponse {
+  session_id: string
+  messages: ChatMessage[]
+}
+
 // 聊天API
 export async function sendChatMessage(
   request: ChatRequest
 ): Promise<ApiResponse<ChatResponse>> {
   const response = await api.post<ApiResponse<ChatResponse>>('/chat', request)
+  return response.data
+}
+
+// 获取会话列表
+export async function getSessions(): Promise<ApiResponse<SessionListResponse>> {
+  const response = await api.get<ApiResponse<SessionListResponse>>('/sessions')
+  return response.data
+}
+
+// 获取会话消息
+export async function getSessionMessages(
+  sessionId: string
+): Promise<ApiResponse<SessionMessagesResponse>> {
+  const response = await api.get<ApiResponse<SessionMessagesResponse>>(
+    `/sessions/${sessionId}/messages`
+  )
   return response.data
 }
 
@@ -110,6 +143,76 @@ export async function getStatsOverview(
     {
       params: { days },
     }
+  )
+  return response.data
+}
+
+// AI配置相关接口
+export interface AIConfig {
+  id: string
+  provider: string
+  is_active: boolean
+  api_key: string | null
+  base_url: string | null
+  model: string | null
+  extra_config: Record<string, any> | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AIConfigListResponse {
+  configs: AIConfig[]
+  active_provider: string | null
+}
+
+export interface AIConfigCreate {
+  provider: string
+  api_key?: string | null
+  base_url?: string | null
+  model?: string | null
+  extra_config?: Record<string, any> | null
+}
+
+export interface AIConfigUpdate {
+  api_key?: string | null
+  base_url?: string | null
+  model?: string | null
+  extra_config?: Record<string, any> | null
+  is_active?: boolean
+}
+
+// 获取所有AI配置
+export async function getAIConfigs(): Promise<ApiResponse<AIConfigListResponse>> {
+  const response = await api.get<ApiResponse<AIConfigListResponse>>('/ai-config')
+  return response.data
+}
+
+// 创建AI配置
+export async function createAIConfig(
+  config: AIConfigCreate
+): Promise<ApiResponse<AIConfig>> {
+  const response = await api.post<ApiResponse<AIConfig>>('/ai-config', config)
+  return response.data
+}
+
+// 更新AI配置
+export async function updateAIConfig(
+  provider: string,
+  config: AIConfigUpdate
+): Promise<ApiResponse<AIConfig>> {
+  const response = await api.put<ApiResponse<AIConfig>>(
+    `/ai-config/${provider}`,
+    config
+  )
+  return response.data
+}
+
+// 激活AI配置
+export async function activateAIConfig(
+  provider: string
+): Promise<ApiResponse<AIConfig>> {
+  const response = await api.post<ApiResponse<AIConfig>>(
+    `/ai-config/${provider}/activate`
   )
   return response.data
 }
