@@ -42,3 +42,4 @@ backend/data/
 *.db-journal
 
 /AI开发规范.md
+/.cursor/
