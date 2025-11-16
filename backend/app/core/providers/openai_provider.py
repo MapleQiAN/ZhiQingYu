@@ -9,17 +9,18 @@ from app.schemas.chat import ChatMessage
 
 
 class OpenAIProvider(LLMProvider):
-    """OpenAI API实现"""
+    """OpenAI API实现（兼容OpenAI API格式的其他提供商）"""
     
-    def __init__(self):
-        api_key = os.getenv("OPENAI_API_KEY")
-        base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    def __init__(self, api_key: str = None, base_url: str = None, model: str = None):
+        # 优先使用传入的参数，否则从环境变量读取
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.base_url = base_url or os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is required")
+        if not self.api_key:
+            raise ValueError("API key is required for OpenAI provider")
         
-        self.client = OpenAI(api_key=api_key, base_url=base_url)
-        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
     
     def generate_reply(self, messages: list[ChatMessage]) -> LLMResult:
         """调用OpenAI API生成回复"""

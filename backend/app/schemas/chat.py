@@ -27,3 +27,22 @@ class ChatResponse(BaseModel):
     topics: list[str]
     risk_level: Literal["normal", "high"]
 
+
+class SessionItem(BaseModel):
+    """会话项"""
+    id: str
+    title: Optional[str] = None
+    created_at: datetime
+    latest_message_at: Optional[datetime] = None
+    preview: Optional[str] = None  # 第一条用户消息的预览
+
+
+class SessionListResponse(BaseModel):
+    """会话列表响应"""
+    sessions: list[SessionItem]
+
+
+class SessionMessagesResponse(BaseModel):
+    """会话消息响应"""
+    session_id: str
+    messages: list[ChatMessage]

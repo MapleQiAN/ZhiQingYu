@@ -11,9 +11,10 @@ from app.schemas.chat import ChatMessage
 class OllamaProvider(LLMProvider):
     """Ollama本地模型实现"""
     
-    def __init__(self):
-        self.base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-        self.model = os.getenv("OLLAMA_MODEL", "llama3.2")
+    def __init__(self, base_url: str = None, model: str = None):
+        # 优先使用传入的参数，否则从环境变量读取
+        self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.model = model or os.getenv("OLLAMA_MODEL", "llama3.2")
     
     def generate_reply(self, messages: list[ChatMessage]) -> LLMResult:
         """调用Ollama API生成回复"""

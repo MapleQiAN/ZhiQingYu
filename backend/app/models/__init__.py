@@ -4,5 +4,6 @@
 from app.models.message import Message
 from app.models.daily_summary import DailySummary
 from app.models.session import Session
+from app.models.ai_config import AIConfig
 
-__all__ = ["Message", "DailySummary", "Session"]
+__all__ = ["Message", "DailySummary", "Session", "AIConfig"]

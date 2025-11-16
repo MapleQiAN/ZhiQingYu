@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from app.db import engine, Base
-from app.api import chat, daily, stats
+from app.api import chat, daily, stats, ai_config
 from app.middleware.error_handler import validation_exception_handler, general_exception_handler
 
 # 创建数据库表
@@ -34,6 +34,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(daily.router, prefix="/api", tags=["daily"])
 app.include_router(stats.router, prefix="/api", tags=["stats"])
+app.include_router(ai_config.router, prefix="/api", tags=["ai-config"])
 
 
 @app.get("/health")
