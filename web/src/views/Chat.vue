@@ -937,6 +937,7 @@ const getEmotionLabel = (emotion: string | null) => {
 
 .input-card :deep(.n-card__content) {
   outline: none !important;
+  padding: var(--spacing-md) !important;
 }
 
 .input-card:hover {
@@ -1056,7 +1057,7 @@ const getEmotionLabel = (emotion: string | null) => {
   font-size: var(--font-size-base);
   line-height: 1.7;
   color: var(--text-primary);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
   border: var(--border-width-thin) solid var(--border-color-base) !important;
   border-color: var(--border-color-base) !important;
   transition: all var(--transition-base);
@@ -1167,7 +1168,7 @@ const getEmotionLabel = (emotion: string | null) => {
 .send-button {
   height: auto;
   padding: var(--spacing-md) var(--spacing-xl);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%) !important;
   border: none !important;
   border-color: transparent !important;
