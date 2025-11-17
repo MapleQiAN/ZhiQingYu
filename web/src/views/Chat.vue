@@ -784,8 +784,8 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 .user-bubble {
-  /* 使用更深的渐变以确保白色文字的可读性 */
-  background: linear-gradient(135deg, var(--color-primary-darker) 0%, var(--color-primary-dark) 40%, var(--color-primary) 100%);
+  /* 使用更浅更温暖的渐变 */
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-secondary) 100%);
   color: var(--text-inverse);
   /* 精致的圆角：右上和左上大圆角，右下小圆角，左下中等圆角 */
   border-top-left-radius: var(--radius-2xl);
@@ -854,9 +854,9 @@ const getEmotionLabel = (emotion: string | null) => {
 
 .user-bubble .message-content {
   color: #FFFFFF;
-  /* 增强文字阴影以提高可读性 */
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3),
-               0 0 2px rgba(0, 0, 0, 0.2);
+  /* 适度的文字阴影以提高可读性 */
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25),
+               0 0 1px rgba(0, 0, 0, 0.15);
   font-weight: var(--font-weight-medium);
 }
 
