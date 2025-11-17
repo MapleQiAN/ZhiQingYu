@@ -462,18 +462,20 @@ const getEmotionLabel = (emotion: string | null) => {
 .sidebar-title {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   margin-bottom: var(--spacing-md);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  opacity: 0.85;
 }
 
 .sidebar-loading,
 .sidebar-empty {
   text-align: center;
   padding: var(--spacing-xl) var(--spacing-md);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
 }
 
 .session-list {
@@ -536,17 +538,19 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 .session-item.active .session-preview {
-  color: var(--text-secondary);
-  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
 .session-time {
   font-size: var(--font-size-xs);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-normal);
 }
 
 .session-item.active .session-time {
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
 }
 
 .chat-container {
@@ -616,7 +620,7 @@ const getEmotionLabel = (emotion: string | null) => {
 .emotion-label {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   letter-spacing: 0.3px;
 }
 
@@ -637,7 +641,8 @@ const getEmotionLabel = (emotion: string | null) => {
 .emotion-text {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
-  background: linear-gradient(135deg, var(--color-primary-darker) 0%, var(--color-primary-dark) 100%);
+  /* 使用更深的渐变以确保可读性 */
+  background: linear-gradient(135deg, var(--color-primary-darker) 0%, var(--color-primary-dark) 50%, var(--color-primary-darker) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -646,11 +651,11 @@ const getEmotionLabel = (emotion: string | null) => {
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-md) var(--spacing-sm);
+  padding: var(--spacing-lg) var(--spacing-md);
   scroll-behavior: smooth;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
   min-height: 0;
 }
 
@@ -704,9 +709,9 @@ const getEmotionLabel = (emotion: string | null) => {
 .welcome-title {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);
-  color: var(--text-secondary);
   margin-bottom: var(--spacing-md);
-  background: linear-gradient(135deg, var(--color-primary-darker) 0%, var(--color-primary-dark) 100%);
+  /* 使用更深的渐变以确保可读性 */
+  background: linear-gradient(135deg, var(--color-primary-darker) 0%, var(--color-primary-dark) 50%, var(--color-primary-darker) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -714,13 +719,19 @@ const getEmotionLabel = (emotion: string | null) => {
 
 .welcome-desc {
   font-size: var(--font-size-base);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   line-height: var(--line-height-relaxed);
+  font-weight: var(--font-weight-normal);
 }
 
 .message-wrapper {
   display: flex;
   animation: slideIn 0.3s ease;
+  margin-bottom: var(--spacing-xs);
+}
+
+.message-wrapper:last-of-type {
+  margin-bottom: 0;
 }
 
 @keyframes slideIn {
@@ -736,22 +747,24 @@ const getEmotionLabel = (emotion: string | null) => {
 
 .user-message {
   justify-content: flex-end;
+  padding-left: var(--spacing-xl);
 }
 
 .assistant-message {
   justify-content: flex-start;
+  padding-right: var(--spacing-xl);
 }
 
 .message-bubble {
   max-width: 75%;
-  padding: var(--spacing-md) var(--spacing-md);
-  border-radius: var(--radius-xl);
+  padding: var(--spacing-md) var(--spacing-lg);
   word-wrap: break-word;
   position: relative;
   box-shadow: var(--shadow-md);
   transition: all var(--transition-base);
   line-height: var(--line-height-relaxed);
   animation: messageSlideIn var(--transition-smooth);
+  border-radius: var(--radius-2xl);
 }
 
 @keyframes messageSlideIn {
@@ -766,15 +779,21 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 .message-bubble:hover {
-  transform: translateY(-2px) scale(1.01);
+  transform: translateY(-1px);
   box-shadow: var(--shadow-lg);
 }
 
 .user-bubble {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  /* 使用更深的渐变以确保白色文字的可读性 */
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-secondary) 100%);
   color: var(--text-inverse);
+  /* 精致的圆角：右上和左上大圆角，右下小圆角，左下中等圆角 */
+  border-top-left-radius: var(--radius-2xl);
+  border-top-right-radius: var(--radius-2xl);
+  border-bottom-left-radius: var(--radius-lg);
   border-bottom-right-radius: var(--radius-md);
-  box-shadow: var(--shadow-warm-md);
+  box-shadow: var(--shadow-warm-md), 
+              0 2px 8px rgba(232, 180, 184, 0.2);
   position: relative;
   overflow: hidden;
 }
@@ -797,10 +816,15 @@ const getEmotionLabel = (emotion: string | null) => {
 .assistant-bubble {
   background: var(--bg-elevated);
   color: var(--text-primary);
-  border: var(--border-width-thin) solid var(--border-color-light);
-  border-bottom-left-radius: var(--radius-md);
+  border: var(--border-width-thin) solid var(--border-color-base);
+  /* 精致的圆角：左上和左下大圆角，右上小圆角，右下中等圆角 */
+  border-top-left-radius: var(--radius-2xl);
+  border-top-right-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-2xl);
+  border-bottom-right-radius: var(--radius-lg);
   backdrop-filter: blur(15px);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm),
+              0 1px 3px rgba(232, 180, 184, 0.08);
   position: relative;
 }
 
@@ -813,21 +837,43 @@ const getEmotionLabel = (emotion: string | null) => {
   bottom: 0;
   background: linear-gradient(135deg, var(--color-primary-lighter) 0%, transparent 100%);
   pointer-events: none;
-  border-radius: var(--radius-xl);
+  border-radius: inherit;
+  opacity: 0.25;
 }
 
 .message-content {
   margin: 0;
-  line-height: var(--line-height-relaxed);
+  line-height: 1.7;
   font-size: var(--font-size-base);
   white-space: pre-wrap;
+  word-break: break-word;
+  letter-spacing: 0.01em;
+  position: relative;
+  z-index: 1;
+}
+
+.user-bubble .message-content {
+  color: #FFFFFF;
+  /* 增强文字阴影以提高可读性 */
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2),
+               0 0 1px rgba(0, 0, 0, 0.15);
+  font-weight: var(--font-weight-medium);
+}
+
+.assistant-bubble .message-content {
+  color: var(--text-primary);
+  /* 确保文本颜色足够深，提高可读性 */
+  font-weight: var(--font-weight-normal);
+  /* 轻微的文字阴影增强对比度 */
+  text-shadow: 0 0.5px 1px rgba(255, 255, 255, 0.8);
 }
 
 .loading-bubble {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
   padding: var(--spacing-md) var(--spacing-lg);
+  min-height: 48px;
 }
 
 .loading-dots {
@@ -867,8 +913,10 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 .loading-text {
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.3px;
 }
 
 .input-card {
@@ -897,8 +945,9 @@ const getEmotionLabel = (emotion: string | null) => {
 
 .input-wrapper {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
   align-items: flex-end;
+  padding: var(--spacing-sm) 0;
 }
 
 .chat-input {
@@ -1005,9 +1054,9 @@ const getEmotionLabel = (emotion: string | null) => {
 
 .chat-input :deep(.n-input__textarea-el) {
   font-size: var(--font-size-base);
-  line-height: var(--line-height-relaxed);
+  line-height: 1.7;
   color: var(--text-primary);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
   border: var(--border-width-thin) solid var(--border-color-base) !important;
   border-color: var(--border-color-base) !important;
   transition: all var(--transition-base);
@@ -1019,6 +1068,7 @@ const getEmotionLabel = (emotion: string | null) => {
   width: 100% !important;
   margin: 0 !important;
   vertical-align: top !important;
+  letter-spacing: 0.01em;
 }
 
 /* 强制覆盖所有可能的绿色边框（包括验证状态） */
@@ -1097,7 +1147,7 @@ const getEmotionLabel = (emotion: string | null) => {
 
 .chat-input :deep(.n-input__textarea-el:focus) {
   border-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 4px var(--color-primary-lighter) !important;
+  box-shadow: 0 0 0 3px var(--color-primary-lighter) !important;
   background: var(--bg-elevated);
   outline: none !important;
 }
@@ -1117,7 +1167,7 @@ const getEmotionLabel = (emotion: string | null) => {
 .send-button {
   height: auto;
   padding: var(--spacing-md) var(--spacing-xl);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%) !important;
   border: none !important;
   border-color: transparent !important;
@@ -1127,6 +1177,7 @@ const getEmotionLabel = (emotion: string | null) => {
   transition: all var(--transition-base);
   white-space: nowrap;
   outline: none !important;
+  letter-spacing: 0.3px;
 }
 
 /* 覆盖所有可能的边框颜色 */
@@ -1164,7 +1215,7 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 .send-button:hover:not(:disabled) {
-  transform: translateY(-3px) scale(1.02);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-warm-lg);
 }
 
@@ -1226,7 +1277,15 @@ const getEmotionLabel = (emotion: string | null) => {
   
   .message-bubble {
     max-width: 85%;
-    padding: 14px 18px;
+    padding: var(--spacing-md) var(--spacing-lg);
+  }
+  
+  .user-message {
+    padding-left: var(--spacing-md);
+  }
+  
+  .assistant-message {
+    padding-right: var(--spacing-md);
   }
   
   .input-wrapper {
@@ -1252,8 +1311,21 @@ const getEmotionLabel = (emotion: string | null) => {
   
   .message-bubble {
     max-width: 90%;
-    padding: 12px 16px;
+    padding: var(--spacing-sm) var(--spacing-md);
     font-size: 14px;
+  }
+  
+  .user-message {
+    padding-left: var(--spacing-sm);
+  }
+  
+  .assistant-message {
+    padding-right: var(--spacing-sm);
+  }
+  
+  .messages-container {
+    padding: var(--spacing-md) var(--spacing-sm);
+    gap: var(--spacing-md);
   }
 }
 
