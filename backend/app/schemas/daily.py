@@ -2,11 +2,9 @@
 日记相关的Pydantic模型
 """
 from pydantic import BaseModel
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 from datetime import date
-
-if TYPE_CHECKING:
-    from app.schemas.message import MessageItem
+from app.schemas.message import MessageItem
 
 
 class DailySummaryItem(BaseModel):
@@ -29,4 +27,4 @@ class DailyDetailResponse(BaseModel):
     main_emotion: Optional[str] = None
     avg_intensity: Optional[float] = None
     main_topics: Optional[list[str]] = None
-    messages: list["MessageItem"] = []
+    messages: list[MessageItem] = []
