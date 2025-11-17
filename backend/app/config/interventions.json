@@ -1,0 +1,120 @@
+{
+  "interventions": [
+    {
+      "id": "emotion_naming",
+      "name": "命名和验证情绪",
+      "description": "帮助用户识别和命名当前情绪，验证其合理性",
+      "triggers": {
+        "emotions": ["anxiety", "sadness", "anger", "guilt", "shame", "confusion"],
+        "intensityMin": 1,
+        "intensityMax": 10
+      },
+      "role": "emotion"
+    },
+    {
+      "id": "catastrophizing_identification",
+      "name": "识别灾难化思维",
+      "description": "帮助用户识别灾难化思维模式，即过度放大负面结果",
+      "triggers": {
+        "emotions": ["anxiety", "fear"],
+        "scenes": ["exam", "work", "study", "career"],
+        "intensityMin": 3,
+        "intensityMax": 10
+      },
+      "role": "clarification"
+    },
+    {
+      "id": "perfectionism_identification",
+      "name": "识别完美主义",
+      "description": "帮助用户识别完美主义倾向，理解'足够好'的概念",
+      "triggers": {
+        "emotions": ["anxiety", "guilt", "shame"],
+        "scenes": ["exam", "work", "study"],
+        "intensityMin": 2,
+        "intensityMax": 10
+      },
+      "role": "clarification"
+    },
+    {
+      "id": "behavioral_activation",
+      "name": "行为激活",
+      "description": "从极小行为开始，帮助用户重新建立行动力",
+      "triggers": {
+        "emotions": ["tired", "sadness", "depression"],
+        "intensityMin": 1,
+        "intensityMax": 10
+      },
+      "role": "action"
+    },
+    {
+      "id": "breathing_exercise",
+      "name": "呼吸放松练习",
+      "description": "提供简单的呼吸放松技巧，帮助缓解急性焦虑",
+      "triggers": {
+        "emotions": ["anxiety", "panic"],
+        "intensityMin": 5,
+        "intensityMax": 10
+      },
+      "role": "action"
+    },
+    {
+      "id": "grounding_exercise",
+      "name": "注意力锚定练习",
+      "description": "通过5-4-3-2-1 grounding技巧，帮助用户回到当下",
+      "triggers": {
+        "emotions": ["anxiety", "panic", "dissociation"],
+        "intensityMin": 4,
+        "intensityMax": 10
+      },
+      "role": "action"
+    },
+    {
+      "id": "task_breakdown",
+      "name": "任务拆解",
+      "description": "将大任务拆解成可执行的小步骤",
+      "triggers": {
+        "scenes": ["exam", "work", "study", "career"],
+        "emotions": ["anxiety", "overwhelmed"],
+        "intensityMin": 1,
+        "intensityMax": 10
+      },
+      "role": "action"
+    },
+    {
+      "id": "self_compassion",
+      "name": "自我关怀",
+      "description": "帮助用户对自己更温和，减少自我批评",
+      "triggers": {
+        "emotions": ["guilt", "shame", "self-blame"],
+        "intensityMin": 1,
+        "intensityMax": 10
+      },
+      "role": "emotion"
+    },
+    {
+      "id": "reframing",
+      "name": "认知重构",
+      "description": "帮助用户从不同角度看待问题",
+      "triggers": {
+        "emotions": ["anxiety", "sadness", "anger"],
+        "intensityMin": 2,
+        "intensityMax": 8
+      },
+      "role": "clarification"
+    },
+    {
+      "id": "boundary_setting",
+      "name": "边界设定",
+      "description": "帮助用户识别和设定健康的边界",
+      "triggers": {
+        "scenes": ["relationship", "family", "work"],
+        "emotions": ["anger", "resentment", "tired"],
+        "intensityMin": 2,
+        "intensityMax": 10
+      },
+      "role": "clarification"
+    }
+  ]
+}
+
+
