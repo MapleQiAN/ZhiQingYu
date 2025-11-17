@@ -32,6 +32,10 @@ export default {
     noHistory: 'No chat history',
     loadingHistory: 'Loading...',
     switchChat: 'Switch Chat',
+    cardTitle: 'Heart Card',
+    emotionEcho: 'Emotion Echo',
+    clarification: 'Clarification',
+    suggestion: 'Suggestion',
   },
   journal: {
     title: 'Journal',

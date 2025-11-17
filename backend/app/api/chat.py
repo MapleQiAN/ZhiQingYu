@@ -124,7 +124,11 @@ async def get_session_messages(
         
         # 转换为ChatMessage格式
         chat_messages = [
-            ChatMessage(role=msg.role, content=msg.content)
+            ChatMessage(
+                role=msg.role, 
+                content=msg.content,
+                card_data=msg.card_data if hasattr(msg, 'card_data') else None
+            )
             for msg in messages
         ]
         

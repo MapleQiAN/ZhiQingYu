@@ -82,13 +82,33 @@
         :key="index"
         :class="['message-wrapper', msg.role === 'user' ? 'user-message' : 'assistant-message']"
       >
+        <!-- 用户消息：普通气泡 -->
         <div
+          v-if="msg.role === 'user'"
           :class="[
             'message-bubble',
-            msg.role === 'user' ? 'user-bubble' : 'assistant-bubble',
+            'user-bubble',
           ]"
         >
           <p class="message-content">{{ msg.content }}</p>
+        </div>
+        
+        <!-- AI回复：如果有卡片数据则显示卡片，否则显示普通气泡 -->
+        <div v-else>
+          <HeartCard
+            v-if="msg.card_data && hasCardData(msg.card_data)"
+            :card-data="msg.card_data"
+            class="assistant-card"
+          />
+          <div
+            v-else
+            :class="[
+              'message-bubble',
+              'assistant-bubble',
+            ]"
+          >
+            <p class="message-content">{{ msg.content }}</p>
+          </div>
         </div>
       </div>
 
@@ -149,7 +169,9 @@ import {
   getSessionMessages,
   type ChatMessage,
   type SessionItem,
+  type CardData,
 } from '@/lib/api'
+import HeartCard from '@/components/HeartCard.vue'
 
 const { t } = useI18n()
 const message = useMessage()
@@ -251,6 +273,18 @@ const formatSessionTime = (timeStr: string | null) => {
   }
 }
 
+// 检查卡片数据是否有效
+const hasCardData = (cardData: CardData | null | undefined): boolean => {
+  if (!cardData) return false
+  return !!(
+    cardData.theme ||
+    cardData.emotion_echo ||
+    cardData.clarification ||
+    (cardData.suggestion && 
+      (Array.isArray(cardData.suggestion) ? cardData.suggestion.length > 0 : cardData.suggestion.trim().length > 0))
+  )
+}
+
 // 监听会话变化，自动刷新会话列表
 watch(sessionId, () => {
   loadSessions()
@@ -289,6 +323,7 @@ const handleSend = async () => {
       const assistantMessage: ChatMessage = {
         role: 'assistant',
         content: data.reply,
+        card_data: data.card_data || null,
       }
 
       messages.value = [...newMessages, assistantMessage]
@@ -862,10 +897,11 @@ const getEmotionLabel = (emotion: string | null) => {
 
 .assistant-bubble .message-content {
   color: var(--text-primary);
-  /* 确保文本颜色足够深，提高可读性 */
-  font-weight: var(--font-weight-normal);
-  /* 移除白色阴影，使用深色阴影增强对比度 */
-  text-shadow: none;
+}
+
+.assistant-card {
+  max-width: 100%;
+  margin: 0;
 }
 
 .loading-bubble {

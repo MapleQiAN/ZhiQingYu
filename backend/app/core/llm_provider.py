@@ -15,6 +15,8 @@ class LLMResult(BaseModel):
     intensity: int
     topics: list[str]
     risk_level: Literal["normal", "high"]
+    # 结构化卡片数据（可选，用于卡片展示）
+    card_data: Optional[dict] = None  # 包含 theme, emotion_echo, clarification, suggestion
 
 
 class LLMProvider(ABC):

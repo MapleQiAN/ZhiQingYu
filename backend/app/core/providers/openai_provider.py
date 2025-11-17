@@ -64,12 +64,23 @@ class OpenAIProvider(LLMProvider):
             logger.info(f"  主题: {result_dict.get('topics', [])}")
             logger.info(f"  风险等级: {result_dict.get('risk_level', 'normal')}")
             
+            # 对于简单回复，也尝试构建卡片数据（如果AI返回了结构化数据）
+            card_data = None
+            if "theme" in result_dict or "emotion_reflection" in result_dict:
+                card_data = {
+                    "theme": result_dict.get("theme", ""),
+                    "emotion_echo": result_dict.get("emotion_reflection", ""),
+                    "clarification": result_dict.get("cognitive_clarification", ""),
+                    "suggestion": result_dict.get("action_suggestions", [])
+                }
+            
             return LLMResult(
                 reply=reply,
                 emotion=result_dict.get("emotion", "neutral"),
                 intensity=result_dict.get("intensity", 2),
                 topics=result_dict.get("topics", []),
-                risk_level=result_dict.get("risk_level", "normal")
+                risk_level=result_dict.get("risk_level", "normal"),
+                card_data=card_data
             )
         except Exception as e:
             # 如果调用失败，返回一个默认的安全回复
@@ -180,12 +191,21 @@ class OpenAIProvider(LLMProvider):
             logger.info(f"  总长度: {len(reply)} 字符")
             logger.info(f"  完整内容:\n{reply}")
             
+            # 构建卡片数据
+            card_data = {
+                "theme": result_dict.get("theme", ""),
+                "emotion_echo": result_dict.get("emotion_reflection", ""),
+                "clarification": result_dict.get("cognitive_clarification", ""),
+                "suggestion": result_dict.get("action_suggestions", [])
+            }
+            
             return LLMResult(
                 reply=reply,
                 emotion=result_dict.get("emotion", parsed.emotions[0] if parsed.emotions else "neutral"),
                 intensity=result_dict.get("intensity", parsed.intensity),
                 topics=result_dict.get("topics", [parsed.scene]),
-                risk_level=result_dict.get("risk_level", "high" if parsed.riskLevel == "high" else "normal")
+                risk_level=result_dict.get("risk_level", "high" if parsed.riskLevel == "high" else "normal"),
+                card_data=card_data
             )
         except Exception as e:
             # 如果调用失败，返回一个默认的安全回复
@@ -285,8 +305,9 @@ class OpenAIProvider(LLMProvider):
 
 请以严格的JSON格式输出，格式如下：
 {{
-  "emotion_reflection": "情绪镜像与安抚部分的内容",
-  "cognitive_clarification": "解释与澄清部分的内容",
+  "theme": "本次对话的核心主题（简洁概括，10-20字）",
+  "emotion_reflection": "情绪镜像与安抚部分的内容（情感回音）",
+  "cognitive_clarification": "解释与澄清部分的内容（认知澄清）",
   "action_suggestions": ["行动建议1", "行动建议2", "行动建议3"],
   "emotion": "情绪标签（从用户情绪中选择一个）",
   "intensity": {parsed.intensity},
@@ -294,7 +315,12 @@ class OpenAIProvider(LLMProvider):
   "risk_level": "{'high' if parsed.riskLevel == 'high' else 'normal'}"
 }}
 
-注意：如果结构中没有某个部分（如listener风格可能没有action），则对应字段可以为空字符串或空数组。
+注意：
+- theme 字段是本次对话的核心主题，要简洁明了
+- 如果结构中没有某个部分（如listener风格可能没有action），则对应字段可以为空字符串或空数组
+- emotion_reflection 对应"情感回音"板块
+- cognitive_clarification 对应"认知澄清"板块
+- action_suggestions 对应"建议"板块
 
 只输出JSON，不要包含任何其他文本。"""
         

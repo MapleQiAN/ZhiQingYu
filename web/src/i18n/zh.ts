@@ -32,6 +32,10 @@ export default {
     noHistory: '暂无聊天记录',
     loadingHistory: '加载中...',
     switchChat: '切换对话',
+    cardTitle: '心灵之卡',
+    emotionEcho: '情感回音',
+    clarification: '认知澄清',
+    suggestion: '建议',
   },
   journal: {
     title: '日记',

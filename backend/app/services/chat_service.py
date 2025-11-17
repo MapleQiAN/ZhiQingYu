@@ -147,7 +147,8 @@ class ChatService:
             content=llm_result.reply,
             emotion=llm_result.emotion,
             intensity=llm_result.intensity,
-            topics=llm_result.topics
+            topics=llm_result.topics,
+            card_data=llm_result.card_data
         )
         self.db.add(assistant_message)
         
@@ -167,7 +168,8 @@ class ChatService:
             "emotion": llm_result.emotion,
             "intensity": llm_result.intensity,
             "topics": llm_result.topics,
-            "risk_level": llm_result.risk_level
+            "risk_level": llm_result.risk_level,
+            "card_data": llm_result.card_data
         }
     
     def _update_daily_summary(self, target_date: date, emotion: str, intensity: int, topics: list[str]):

@@ -18,9 +18,17 @@ export interface ApiResponse<T> {
   } | null
 }
 
+export interface CardData {
+  theme?: string
+  emotion_echo?: string
+  clarification?: string
+  suggestion?: string[] | string
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+  card_data?: CardData | null
 }
 
 export interface ChatRequest {
@@ -35,6 +43,7 @@ export interface ChatResponse {
   intensity: number
   topics: string[]
   risk_level: 'normal' | 'high'
+  card_data?: CardData | null
 }
 
 export interface DailySummaryItem {
