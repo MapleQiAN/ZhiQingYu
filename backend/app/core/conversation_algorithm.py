@@ -31,61 +31,145 @@ INTERVENTION_DESCRIPTIONS = {
 }
 
 
-def parse_user_message(message: ChatMessage) -> ParsedState:
+def parse_user_message(message: ChatMessage, history: list[ChatMessage] = None) -> ParsedState:
     """
     解析用户消息，提取情绪、强度、场景等信息
     
-    这是一个简化版本，实际应该调用专门的NLP服务或LLM
+    增强版本：
+    - 支持更多情绪类型（13种）
+    - 更细粒度的强度估算（1-10）
+    - 考虑对话历史上下文
+    - 更准确的场景和风险识别
     """
     content = message.content.lower()
+    history = history or []
     
-    # 简单的关键词匹配（实际应该用更复杂的NLP）
-    emotions = []
-    if any(word in content for word in ["焦虑", "担心", "anxiety", "worried"]):
-        emotions.append("anxiety")
-    if any(word in content for word in ["难过", "伤心", "sad", "sadness"]):
-        emotions.append("sadness")
-    if any(word in content for word in ["愤怒", "生气", "anger", "angry"]):
-        emotions.append("anger")
-    if any(word in content for word in ["开心", "高兴", "joy", "happy"]):
-        emotions.append("joy")
-    if not emotions:
-        emotions.append("neutral")
+    # 扩展的情绪关键词映射（支持13种情绪）
+    emotion_keywords = {
+        "anxiety": ["焦虑", "担心", "紧张", "不安", "anxiety", "worried", "nervous", "worries"],
+        "sadness": ["难过", "伤心", "沮丧", "失落", "sad", "sadness", "depressed", "down"],
+        "anger": ["生气", "愤怒", "恼火", "angry", "anger", "mad", "furious"],
+        "guilt": ["内疚", "愧疚", "guilt", "guilty", "自责"],
+        "shame": ["羞耻", "丢脸", "shame", "ashamed", "embarrassed"],
+        "fear": ["害怕", "恐惧", "fear", "scared", "afraid", "terrified"],
+        "tired": ["累", "疲惫", "疲倦", "tired", "exhausted", "drained"],
+        "overwhelmed": ["崩溃", "受不了", "overwhelmed", "崩溃", "撑不住"],
+        "confusion": ["困惑", "迷茫", "confusion", "confused", "lost"],
+        "joy": ["开心", "高兴", "快乐", "joy", "happy", "pleased"],
+        "relief": ["放松", "relief", "relieved", "轻松"],
+        "calm": ["平静", "calm", "peaceful", "serene"],
+        "neutral": []  # 默认情绪
+    }
     
-    # 估算强度（简化版）
-    intensity = 5
-    if any(word in content for word in ["非常", "特别", "极度", "very", "extremely"]):
-        intensity = 8
-    elif any(word in content for word in ["有点", "稍微", "a bit", "slightly"]):
-        intensity = 3
+    # 检测情绪（支持多情绪）
+    detected_emotions = []
+    emotion_scores = {}  # 记录每个情绪的匹配强度
     
-    # 场景识别（简化版）
-    scene = "general"
-    if any(word in content for word in ["考试", "学习", "exam", "study"]):
-        scene = "exam"
-    elif any(word in content for word in ["工作", "职场", "work", "job"]):
-        scene = "work"
-    elif any(word in content for word in ["关系", "恋爱", "relationship", "love"]):
-        scene = "relationship"
+    for emotion, keywords in emotion_keywords.items():
+        if emotion == "neutral":
+            continue
+        matches = sum(1 for kw in keywords if kw in content)
+        if matches > 0:
+            detected_emotions.append(emotion)
+            emotion_scores[emotion] = matches
     
-    # 风险等级（简化版）
+    # 如果没有检测到情绪，使用neutral
+    if not detected_emotions:
+        detected_emotions = ["neutral"]
+    
+    # 限制最多3个主要情绪
+    if len(detected_emotions) > 3:
+        detected_emotions = sorted(detected_emotions, key=lambda e: emotion_scores.get(e, 0), reverse=True)[:3]
+    
+    # 更细粒度的强度估算（1-10）
+    intensity = 5  # 默认中等强度
+    
+    # 强度增强词（按强度分级）
+    extreme_intensity_words = ["极度", "超级", "非常非常", "extremely", "extremely", "崩溃", "绝望"]
+    high_intensity_words = ["非常", "特别", "很", "very", "really", "much"]
+    medium_intensity_words = ["比较", "有点", "somewhat", "quite"]
+    low_intensity_words = ["稍微", "一点点", "a bit", "slightly", "little"]
+    
+    if any(word in content for word in extreme_intensity_words):
+        intensity = 9
+    elif any(word in content for word in high_intensity_words):
+        intensity = 7
+    elif any(word in content for word in medium_intensity_words):
+        intensity = 4
+    elif any(word in content for word in low_intensity_words):
+        intensity = 2
+    
+    # 根据情绪数量调整强度（多情绪叠加可能增加强度）
+    if len(detected_emotions) > 1:
+        intensity = min(10, intensity + 1)
+    
+    # 根据历史情绪调整强度（如果历史中有相似情绪，可能表示持续困扰）
+    if history:
+        recent_emotions = []
+        for msg in history[-3:]:  # 只看最近3条消息
+            if hasattr(msg, 'emotion') and msg.emotion:
+                recent_emotions.append(msg.emotion)
+        
+        # 如果最近有相似情绪，可能表示持续困扰，适当提高强度
+        if any(emotion in recent_emotions for emotion in detected_emotions):
+            intensity = min(10, intensity + 1)
+    
+    # 扩展的场景识别
+    scene_keywords = {
+        "exam": ["考试", "期末", "测验", "exam", "test", "quiz"],
+        "study": ["学习", "作业", "study", "homework", "课程"],
+        "work": ["工作", "加班", "职场", "work", "job", "career", "同事", "老板"],
+        "career": ["职业", "career", "职业规划", "工作规划"],
+        "relationship": ["恋爱", "分手", "relationship", "love", "感情", "对象"],
+        "family": ["家庭", "父母", "家人", "family", "parent", "家人"],
+        "social": ["社交", "朋友", "social", "friend", "友谊"],
+        "health": ["健康", "身体", "health", "身体", "疾病"],
+        "self-worth": ["自我价值", "自卑", "self-worth", "自信", "自我"],
+        "future": ["未来", "前途", "future", "将来"],
+    }
+    
+    detected_scene = "general"
+    scene_scores = {}
+    for scene, keywords in scene_keywords.items():
+        matches = sum(1 for kw in keywords if kw in content)
+        if matches > 0:
+            scene_scores[scene] = matches
+    
+    if scene_scores:
+        detected_scene = max(scene_scores, key=scene_scores.get)
+    
+    # 增强的风险等级检测
+    high_risk_keywords = ["自杀", "自残", "不想活", "结束生命", "suicide", "kill myself", "self-harm", "不想活了"]
+    medium_risk_keywords = ["绝望", "没有希望", "hopeless", "desperate", "撑不下去"]
+    
     risk_level = "low"
-    if any(word in content for word in ["自杀", "自残", "suicide", "self-harm"]):
+    if any(kw in content for kw in high_risk_keywords):
         risk_level = "high"
+        intensity = max(intensity, 9)  # 高风险时至少强度9
+    elif any(kw in content for kw in medium_risk_keywords):
+        risk_level = "medium"
+        intensity = max(intensity, 7)
     elif intensity >= 8:
         risk_level = "medium"
     
-    # 用户目标（简化版）
-    user_goal = "want_relief"
-    if any(word in content for word in ["怎么办", "建议", "how", "suggestion"]):
+    # 增强的用户目标识别
+    user_goal = "want_relief"  # 默认想要缓解
+    
+    plan_keywords = ["怎么办", "建议", "如何", "how", "suggestion", "方法", "计划", "plan"]
+    analysis_keywords = ["理解", "为什么", "why", "understand", "分析", "analyze", "原因"]
+    listen_keywords = ["倾听", "听我说", "想聊聊", "想说话"]
+    
+    if any(kw in content for kw in plan_keywords):
         user_goal = "want_plan"
-    elif any(word in content for word in ["理解", "为什么", "why", "understand"]):
+    elif any(kw in content for kw in analysis_keywords):
         user_goal = "want_clarification"
+    elif any(kw in content for kw in listen_keywords):
+        user_goal = "want_listen"
     
     return ParsedState(
-        emotions=emotions,
+        emotions=detected_emotions,
         intensity=intensity,
-        scene=scene,
+        scene=detected_scene,
         riskLevel=risk_level,
         userGoal=user_goal
     )
@@ -258,7 +342,7 @@ def generate_reply_with_algorithm(
     4. 规划回复结构 -> ReplyPlan
     5. 调用LLM生成回复 -> LLMResult
     """
-    # 1. 解析用户消息
+    # 1. 解析用户消息（传入历史消息以考虑上下文）
     user_message = messages[-1] if messages else None
     if not user_message or user_message.role != "user":
         # 如果没有用户消息，返回默认回复
@@ -270,7 +354,8 @@ def generate_reply_with_algorithm(
             risk_level="normal"
         )
     
-    parsed = parse_user_message(user_message)
+    # 传入历史消息以考虑上下文
+    parsed = parse_user_message(user_message, history=messages[:-1] if len(messages) > 1 else [])
     
     # 2. 选择风格
     style = select_style(user_profile, parsed)

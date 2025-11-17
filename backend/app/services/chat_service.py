@@ -116,8 +116,8 @@ class ChatService:
         # 6.5. 质量自检（在保存前检查回复质量）
         if user_message:
             try:
-                # 重新解析用户消息以获取ParsedState
-                parsed = parse_user_message(user_message)
+                # 重新解析用户消息以获取ParsedState（传入历史消息）
+                parsed = parse_user_message(user_message, history=messages[:-1] if len(messages) > 1 else [])
                 safety_checker = SafetyChecker()
                 check_result = safety_checker.check_reply_quality(
                     user_message=user_message,
@@ -173,7 +173,14 @@ class ChatService:
         }
     
     def _update_daily_summary(self, target_date: date, emotion: str, intensity: int, topics: list[str]):
-        """更新或创建每日摘要"""
+        """
+        更新或创建每日摘要
+        
+        优化点：
+        - 使用时间加权平均计算强度（最近的消息权重更高）
+        - 使用加权频率计算主要情绪（考虑强度权重）
+        - 智能合并相似主题
+        """
         summary = self.db.query(DailySummary).filter(DailySummary.date == target_date).first()
         
         if not summary:
@@ -188,19 +195,34 @@ class ChatService:
             self.db.add(summary)
         else:
             # 更新现有摘要
-            # 计算新的平均强度（简单平均）
+            # 获取今天的所有消息（按时间排序）
             today_messages = self.db.query(Message).filter(
                 func.date(Message.created_at) == target_date,
                 Message.intensity.isnot(None)
-            ).all()
+            ).order_by(Message.created_at.asc()).all()
             
             if today_messages:
-                intensities = [msg.intensity for msg in today_messages if msg.intensity]
-                if intensities:
-                    summary.avg_intensity = sum(intensities) / len(intensities)
+                # 使用时间加权平均计算强度（最近的消息权重更高）
+                # 权重 = (消息序号 + 1) / 总消息数，使得后面的消息权重更高
+                total_messages = len(today_messages)
+                weighted_sum = 0.0
+                total_weight = 0.0
+                
+                for idx, msg in enumerate(today_messages):
+                    if msg.intensity:
+                        # 权重：后面的消息权重更高（线性递增）
+                        weight = (idx + 1) / total_messages
+                        weighted_sum += msg.intensity * weight
+                        total_weight += weight
+                
+                if total_weight > 0:
+                    summary.avg_intensity = weighted_sum / total_weight
+                else:
+                    summary.avg_intensity = float(intensity)
             
-            # 更新主要情绪（使用出现频率最高的）
-            emotion_counts = {}
+            # 更新主要情绪（使用加权频率，考虑强度权重）
+            # 高强度情绪的出现应该被赋予更高权重
+            emotion_scores = {}  # emotion -> weighted_count
             today_emotions = self.db.query(Message).filter(
                 func.date(Message.created_at) == target_date,
                 Message.emotion.isnot(None)
@@ -208,15 +230,31 @@ class ChatService:
             
             for msg in today_emotions:
                 if msg.emotion:
-                    emotion_counts[msg.emotion] = emotion_counts.get(msg.emotion, 0) + 1
+                    # 强度越高，权重越大（1-10的强度，权重为强度值）
+                    weight = msg.intensity if msg.intensity else 5  # 默认权重为5
+                    emotion_scores[msg.emotion] = emotion_scores.get(msg.emotion, 0) + weight
             
-            if emotion_counts:
-                summary.main_emotion = max(emotion_counts, key=emotion_counts.get)
+            if emotion_scores:
+                # 选择加权得分最高的情绪
+                summary.main_emotion = max(emotion_scores, key=emotion_scores.get)
+            elif emotion:
+                # 如果没有历史数据，使用当前情绪
+                summary.main_emotion = emotion
             
-            # 合并主题
-            all_topics = set(summary.main_topics or [])
-            all_topics.update(topics)
-            summary.main_topics = list(all_topics)
+            # 智能合并主题（去重并保留频率信息）
+            all_topics = {}
+            # 先统计现有主题的频率
+            if summary.main_topics:
+                for topic in summary.main_topics:
+                    all_topics[topic] = all_topics.get(topic, 0) + 1
+            
+            # 添加新主题
+            for topic in topics:
+                all_topics[topic] = all_topics.get(topic, 0) + 1
+            
+            # 按频率排序，保留前10个最常见的主题
+            sorted_topics = sorted(all_topics.items(), key=lambda x: x[1], reverse=True)
+            summary.main_topics = [topic for topic, count in sorted_topics[:10]]
             
             summary.updated_at = datetime.now()
 
