@@ -466,12 +466,41 @@ onMounted(() => {
   box-shadow: 0 4px 24px rgba(255, 182, 193, 0.12) !important;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
   backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+}
+
+.warm-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #FFB6C1 0%, #FFA07A 50%, #FFB6C1 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite linear;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .warm-card:hover {
   box-shadow: 0 8px 40px rgba(255, 182, 193, 0.2) !important;
   transform: translateY(-3px);
   border-color: rgba(255, 182, 193, 0.35) !important;
+}
+
+.warm-card:hover::before {
+  opacity: 1;
 }
 
 .settings-card {
@@ -490,6 +519,13 @@ onMounted(() => {
 .card-icon {
   font-size: 28px;
   filter: drop-shadow(0 2px 6px rgba(255, 182, 193, 0.4));
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-block;
+}
+
+.warm-card:hover .card-icon {
+  transform: scale(1.1) rotate(5deg);
+  filter: drop-shadow(0 4px 8px rgba(255, 182, 193, 0.5));
 }
 
 .card-title {
@@ -567,18 +603,41 @@ onMounted(() => {
   border: 1px solid rgba(255, 182, 193, 0.2);
   border-radius: 12px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.config-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #FFB6C1 0%, #FFA07A 100%);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
 }
 
 .config-item:hover {
   background: rgba(255, 255, 255, 0.8);
   border-color: rgba(255, 182, 193, 0.4);
   box-shadow: 0 2px 8px rgba(255, 182, 193, 0.15);
+  transform: translateX(4px);
+}
+
+.config-item:hover::before {
+  transform: scaleY(1);
 }
 
 .config-item.active {
   border-color: rgba(217, 119, 159, 0.5);
   background: rgba(255, 250, 245, 0.8);
   box-shadow: 0 2px 12px rgba(217, 119, 159, 0.2);
+}
+
+.config-item.active::before {
+  transform: scaleY(1);
 }
 
 .config-header {
@@ -615,6 +674,16 @@ onMounted(() => {
 
 .action-button {
   font-size: 0.85rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.action-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 182, 193, 0.25);
+}
+
+.action-button:active {
+  transform: translateY(0);
 }
 
 .config-details {

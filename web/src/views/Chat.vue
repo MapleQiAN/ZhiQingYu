@@ -323,24 +323,26 @@ const getEmotionLabel = (emotion: string | null) => {
 </script>
 
 <style scoped>
+@import '../styles/design-system.css';
+
 .chat-layout {
   display: flex;
   height: calc(100vh - 180px);
   min-height: 600px;
-  gap: 1rem;
+  gap: var(--spacing-md);
 }
 
 .sidebar {
   width: 280px;
   min-width: 280px;
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid rgba(255, 182, 193, 0.25);
-  border-radius: 24px;
-  box-shadow: 0 4px 24px rgba(255, 182, 193, 0.12);
+  background: var(--bg-elevated);
+  border: var(--border-width-thin) solid var(--border-color-light);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-warm-md);
   backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-base);
   overflow: hidden;
 }
 
@@ -350,11 +352,11 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 .sidebar-header {
-  padding: 1rem;
+  padding: var(--spacing-md);
   display: flex;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
   align-items: center;
-  border-bottom: 1px solid rgba(255, 182, 193, 0.15);
+  border-bottom: var(--border-width-thin) solid var(--border-color-light);
   flex-shrink: 0;
 }
 
@@ -364,12 +366,12 @@ const getEmotionLabel = (emotion: string | null) => {
 
 .new-chat-button {
   flex: 1;
-  background: linear-gradient(135deg, #FFB6C1 0%, #FFA07A 100%) !important;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%) !important;
   border: none !important;
   border-color: transparent !important;
-  border-radius: 12px !important;
-  font-weight: 600;
-  transition: all 0.3s ease;
+  border-radius: var(--radius-lg) !important;
+  font-weight: var(--font-weight-semibold);
+  transition: all var(--transition-base);
   outline: none !important;
 }
 
@@ -418,13 +420,13 @@ const getEmotionLabel = (emotion: string | null) => {
 
 .new-chat-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 182, 193, 0.35) !important;
+  box-shadow: var(--shadow-warm-md) !important;
 }
 
 .new-chat-button:focus,
 .new-chat-button:focus-visible {
   outline: none !important;
-  box-shadow: 0 4px 12px rgba(255, 182, 193, 0.35) !important;
+  box-shadow: var(--shadow-warm-md) !important;
 }
 
 .sidebar-collapsed .new-chat-button {
@@ -434,7 +436,7 @@ const getEmotionLabel = (emotion: string | null) => {
 .sidebar-content {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
+  padding: var(--spacing-md);
   display: flex;
   flex-direction: column;
 }
@@ -444,24 +446,24 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 .sidebar-content::-webkit-scrollbar-track {
-  background: rgba(255, 182, 193, 0.05);
-  border-radius: 10px;
+  background: var(--color-neutral-100);
+  border-radius: var(--radius-lg);
 }
 
 .sidebar-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 182, 193, 0.3);
-  border-radius: 10px;
+  background: var(--color-primary-light);
+  border-radius: var(--radius-lg);
 }
 
 .sidebar-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 182, 193, 0.5);
+  background: var(--color-primary);
 }
 
 .sidebar-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #8B6F7E;
-  margin-bottom: 1rem;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -469,76 +471,98 @@ const getEmotionLabel = (emotion: string | null) => {
 .sidebar-loading,
 .sidebar-empty {
   text-align: center;
-  padding: 2rem 1rem;
-  color: #A68A8A;
-  font-size: 14px;
+  padding: var(--spacing-xl) var(--spacing-md);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
 }
 
 .session-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
 }
 
 .session-item {
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
+  padding: var(--spacing-md) var(--spacing-md);
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: all 0.3s ease;
-  border: 1px solid transparent;
-  background: rgba(255, 182, 193, 0.05);
+  transition: all var(--transition-base);
+  border: var(--border-width-thin) solid transparent;
+  background: var(--color-primary-lighter);
+  position: relative;
+  overflow: hidden;
+}
+
+.session-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  transform: scaleY(0);
+  transition: transform var(--transition-base);
 }
 
 .session-item:hover {
-  background: rgba(255, 182, 193, 0.15);
+  background: var(--color-primary-light);
   transform: translateX(4px);
-  border-color: rgba(255, 182, 193, 0.3);
+  border-color: var(--border-color-base);
+}
+
+.session-item:hover::before {
+  transform: scaleY(1);
 }
 
 .session-item.active {
-  background: linear-gradient(135deg, rgba(255, 182, 193, 0.2) 0%, rgba(255, 218, 185, 0.2) 100%);
-  border-color: rgba(255, 182, 193, 0.4);
-  box-shadow: 0 2px 8px rgba(255, 182, 193, 0.2);
+  background: linear-gradient(135deg, var(--color-primary-lighter) 0%, var(--color-secondary-lighter) 100%);
+  border-color: var(--border-color-base);
+  box-shadow: var(--shadow-warm-sm);
+}
+
+.session-item.active::before {
+  transform: scaleY(1);
 }
 
 .session-preview {
-  font-size: 14px;
-  color: #4A4A4A;
-  margin-bottom: 0.25rem;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.4;
+  line-height: var(--line-height-normal);
 }
 
 .session-item.active .session-preview {
-  color: #8B6F7E;
-  font-weight: 500;
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
 }
 
 .session-time {
-  font-size: 12px;
-  color: #A68A8A;
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
 }
 
 .session-item.active .session-time {
-  color: #8B6F7E;
+  color: var(--text-secondary);
 }
 
 .chat-container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--spacing-lg);
   min-width: 0;
 }
 
 .emotion-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 250, 245, 0.98) 100%) !important;
-  border: 1px solid rgba(255, 182, 193, 0.25) !important;
-  border-radius: 24px !important;
-  box-shadow: 0 4px 24px rgba(255, 182, 193, 0.12) !important;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  background: var(--bg-elevated) !important;
+  border: var(--border-width-thin) solid var(--border-color-light) !important;
+  border-radius: var(--radius-2xl) !important;
+  box-shadow: var(--shadow-warm-md) !important;
+  transition: all var(--transition-smooth) !important;
   backdrop-filter: blur(20px);
   flex-shrink: 0;
   outline: none !important;
@@ -554,22 +578,22 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 .emotion-card:hover {
-  box-shadow: 0 8px 40px rgba(255, 182, 193, 0.2) !important;
+  box-shadow: var(--shadow-warm-lg) !important;
   transform: translateY(-3px);
-  border-color: rgba(255, 182, 193, 0.35) !important;
+  border-color: var(--border-color-base) !important;
 }
 
 .emotion-card-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0;
+  padding: var(--spacing-sm) 0;
 }
 
 .emotion-left {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--spacing-md);
 }
 
 .emotion-icon-wrapper {
@@ -578,42 +602,42 @@ const getEmotionLabel = (emotion: string | null) => {
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, rgba(255, 182, 193, 0.15) 0%, rgba(255, 218, 185, 0.15) 100%);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 182, 193, 0.2);
+  background: linear-gradient(135deg, var(--color-primary-lighter) 0%, var(--color-secondary-lighter) 100%);
+  border-radius: var(--radius-xl);
+  border: var(--border-width-thin) solid var(--border-color-light);
 }
 
 .emotion-icon {
-  font-size: 28px;
-  filter: drop-shadow(0 2px 6px rgba(255, 182, 193, 0.4));
+  font-size: var(--font-size-2xl);
+  filter: drop-shadow(0 2px 6px rgba(232, 180, 184, 0.4));
   animation: float 3s ease-in-out infinite;
 }
 
 .emotion-label {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #8B6F7E;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
   letter-spacing: 0.3px;
 }
 
 .emotion-badge {
-  padding: 10px 24px;
-  background: linear-gradient(135deg, rgba(255, 182, 193, 0.2) 0%, rgba(255, 218, 185, 0.2) 100%);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 182, 193, 0.35);
-  box-shadow: 0 2px 8px rgba(255, 182, 193, 0.15);
-  transition: all 0.3s ease;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: linear-gradient(135deg, var(--color-primary-lighter) 0%, var(--color-secondary-lighter) 100%);
+  border-radius: var(--radius-2xl);
+  border: var(--border-width-thin) solid var(--border-color-base);
+  box-shadow: var(--shadow-warm-sm);
+  transition: all var(--transition-base);
 }
 
 .emotion-badge:hover {
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(255, 182, 193, 0.25);
+  box-shadow: var(--shadow-warm-md);
 }
 
 .emotion-text {
-  font-size: 16px;
-  font-weight: 600;
-  background: linear-gradient(135deg, #D9779F 0%, #C97A9A 100%);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  background: linear-gradient(135deg, var(--color-primary-darker) 0%, var(--color-primary-dark) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -622,11 +646,11 @@ const getEmotionLabel = (emotion: string | null) => {
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem 0.5rem;
+  padding: var(--spacing-md) var(--spacing-sm);
   scroll-behavior: smooth;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--spacing-md);
   min-height: 0;
 }
 
@@ -635,29 +659,40 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 .messages-container::-webkit-scrollbar-track {
-  background: rgba(255, 182, 193, 0.05);
-  border-radius: 10px;
+  background: var(--color-neutral-100);
+  border-radius: var(--radius-lg);
 }
 
 .messages-container::-webkit-scrollbar-thumb {
-  background: rgba(255, 182, 193, 0.3);
-  border-radius: 10px;
+  background: var(--color-primary-light);
+  border-radius: var(--radius-lg);
 }
 
 .messages-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 182, 193, 0.5);
+  background: var(--color-primary);
 }
 
 .welcome-section {
   text-align: center;
-  padding: 60px 20px;
-  animation: fadeIn 0.6s ease;
+  padding: var(--spacing-3xl) var(--spacing-md);
+  animation: welcomeFadeIn var(--transition-smooth);
+}
+
+@keyframes welcomeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .welcome-icon {
-  font-size: 64px;
-  margin-bottom: 20px;
-  filter: drop-shadow(0 4px 8px rgba(255, 182, 193, 0.3));
+  font-size: var(--font-size-5xl);
+  margin-bottom: var(--spacing-md);
+  filter: drop-shadow(0 4px 8px rgba(232, 180, 184, 0.3));
   animation: float 3s ease-in-out infinite;
 }
 
@@ -667,20 +702,20 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 .welcome-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #8B6F7E;
-  margin-bottom: 12px;
-  background: linear-gradient(135deg, #D9779F 0%, #C97A9A 100%);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+  background: linear-gradient(135deg, var(--color-primary-darker) 0%, var(--color-primary-dark) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .welcome-desc {
-  font-size: 15px;
-  color: #A68A8A;
-  line-height: 1.6;
+  font-size: var(--font-size-base);
+  color: var(--text-tertiary);
+  line-height: var(--line-height-relaxed);
 }
 
 .message-wrapper {
@@ -709,60 +744,102 @@ const getEmotionLabel = (emotion: string | null) => {
 
 .message-bubble {
   max-width: 75%;
-  padding: 16px 20px;
-  border-radius: 22px;
+  padding: var(--spacing-md) var(--spacing-md);
+  border-radius: var(--radius-xl);
   word-wrap: break-word;
   position: relative;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  line-height: 1.6;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+  line-height: var(--line-height-relaxed);
+  animation: messageSlideIn var(--transition-smooth);
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .message-bubble:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: var(--shadow-lg);
 }
 
 .user-bubble {
-  background: linear-gradient(135deg, #FFB6C1 0%, #FFA07A 100%);
-  color: white;
-  border-bottom-right-radius: 8px;
-  box-shadow: 0 4px 16px rgba(255, 182, 193, 0.3);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: var(--text-inverse);
+  border-bottom-right-radius: var(--radius-md);
+  box-shadow: var(--shadow-warm-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.user-bubble::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.user-bubble:hover::before {
+  left: 100%;
 }
 
 .assistant-bubble {
-  background: rgba(255, 255, 255, 0.98);
-  color: #4A4A4A;
-  border: 1px solid rgba(255, 182, 193, 0.25);
-  border-bottom-left-radius: 8px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: var(--border-width-thin) solid var(--border-color-light);
+  border-bottom-left-radius: var(--radius-md);
   backdrop-filter: blur(15px);
-  box-shadow: 0 4px 16px rgba(255, 182, 193, 0.1);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.assistant-bubble::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--color-primary-lighter) 0%, transparent 100%);
+  pointer-events: none;
+  border-radius: var(--radius-xl);
 }
 
 .message-content {
   margin: 0;
-  line-height: 1.6;
-  font-size: 15px;
+  line-height: var(--line-height-relaxed);
+  font-size: var(--font-size-base);
   white-space: pre-wrap;
 }
 
 .loading-bubble {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 18px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
 }
 
 .loading-dots {
   display: flex;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .loading-dots span {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background: rgba(255, 182, 193, 0.6);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
   animation: bounce 1.4s ease-in-out infinite;
 }
 
@@ -790,18 +867,18 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 .loading-text {
-  color: #A68A8A;
-  font-size: 14px;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
 }
 
 .input-card {
-  background: rgba(255, 255, 255, 0.98) !important;
-  border: 1px solid rgba(255, 182, 193, 0.25) !important;
-  border-radius: 24px !important;
-  box-shadow: 0 4px 24px rgba(255, 182, 193, 0.12) !important;
+  background: var(--bg-elevated) !important;
+  border: var(--border-width-thin) solid var(--border-color-light) !important;
+  border-radius: var(--radius-2xl) !important;
+  box-shadow: var(--shadow-warm-md) !important;
   backdrop-filter: blur(20px);
   flex-shrink: 0;
-  transition: all 0.3s ease;
+  transition: all var(--transition-base);
   outline: none !important;
 }
 
@@ -815,12 +892,12 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 .input-card:hover {
-  box-shadow: 0 6px 32px rgba(255, 182, 193, 0.18) !important;
+  box-shadow: var(--shadow-warm-lg) !important;
 }
 
 .input-wrapper {
   display: flex;
-  gap: 1rem;
+  gap: var(--spacing-md);
   align-items: flex-end;
 }
 
@@ -927,15 +1004,15 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 .chat-input :deep(.n-input__textarea-el) {
-  font-size: 15px;
-  line-height: 1.7;
-  color: #4A4A4A;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 182, 193, 0.3) !important;
-  border-color: rgba(255, 182, 193, 0.3) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  padding: 14px 18px !important;
-  background: rgba(255, 255, 255, 0.8);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  color: var(--text-primary);
+  border-radius: var(--radius-xl);
+  border: var(--border-width-thin) solid var(--border-color-base) !important;
+  border-color: var(--border-color-base) !important;
+  transition: all var(--transition-base);
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  background: var(--bg-elevated);
   resize: none;
   outline: none !important;
   box-sizing: border-box !important;
@@ -1019,35 +1096,35 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 .chat-input :deep(.n-input__textarea-el:focus) {
-  border-color: rgba(255, 182, 193, 0.6) !important;
-  box-shadow: 0 0 0 4px rgba(255, 182, 193, 0.12) !important;
-  background: rgba(255, 255, 255, 1);
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 4px var(--color-primary-lighter) !important;
+  background: var(--bg-elevated);
   outline: none !important;
 }
 
 .chat-input :deep(.n-input__textarea-el:focus-visible) {
   outline: none !important;
-  border-color: rgba(255, 182, 193, 0.6) !important;
-  box-shadow: 0 0 0 4px rgba(255, 182, 193, 0.12) !important;
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 4px var(--color-primary-lighter) !important;
 }
 
 .chat-input :deep(.n-input__textarea-el::placeholder) {
-  color: #B8A8A8;
+  color: var(--text-disabled);
   opacity: 1;
-  line-height: 1.7;
+  line-height: var(--line-height-relaxed);
 }
 
 .send-button {
   height: auto;
-  padding: 14px 28px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #FFB6C1 0%, #FFA07A 100%) !important;
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%) !important;
   border: none !important;
   border-color: transparent !important;
-  font-weight: 600;
-  font-size: 15px;
-  box-shadow: 0 4px 18px rgba(255, 182, 193, 0.35);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  box-shadow: var(--shadow-warm-md);
+  transition: all var(--transition-base);
   white-space: nowrap;
   outline: none !important;
 }
@@ -1088,7 +1165,7 @@ const getEmotionLabel = (emotion: string | null) => {
 
 .send-button:hover:not(:disabled) {
   transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 8px 28px rgba(255, 182, 193, 0.45);
+  box-shadow: var(--shadow-warm-lg);
 }
 
 .send-button:active:not(:disabled) {

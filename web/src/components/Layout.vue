@@ -155,69 +155,56 @@ const handleLocaleSelect = (key: string | number) => {
 </script>
 
 <style scoped>
+@import '../styles/design-system.css';
+
 .warm-bg {
-  background: linear-gradient(135deg, #FFF9F5 0%, #FFF5ED 50%, #FFF0E6 100%);
+  background: var(--bg-primary);
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(232, 180, 184, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(244, 194, 161, 0.06) 0%, transparent 50%);
   min-height: 100vh;
   position: relative;
-}
-
-.warm-bg::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    radial-gradient(circle at 20% 50%, rgba(255, 182, 193, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(255, 218, 185, 0.08) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
 }
 
 .warm-header {
   background: rgba(255, 255, 255, 0.9) !important;
   backdrop-filter: blur(25px) saturate(180%);
   -webkit-backdrop-filter: blur(25px) saturate(180%);
-  box-shadow: 
-    0 4px 30px rgba(255, 182, 193, 0.12),
-    0 1px 0 rgba(255, 255, 255, 0.8) inset;
-  border-bottom: 1px solid rgba(255, 182, 193, 0.2) !important;
+  box-shadow: var(--shadow-warm-md);
+  border-bottom: var(--border-width-thin) solid var(--border-color-light) !important;
   position: sticky;
   top: 0;
-  z-index: 100;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: var(--z-sticky);
+  transition: all var(--transition-smooth);
   overflow: hidden;
 }
 
 .warm-header:hover {
-  box-shadow: 
-    0 8px 45px rgba(255, 182, 193, 0.18),
-    0 1px 0 rgba(255, 255, 255, 0.9) inset;
-  border-bottom-color: rgba(255, 182, 193, 0.3) !important;
+  box-shadow: var(--shadow-warm-lg);
+  border-bottom-color: var(--border-color-base) !important;
 }
 
 .header-container {
   position: relative;
   width: 100%;
   margin: 0;
-  padding: 0 2rem;
+  padding: 0 var(--spacing-xl);
 }
 
 .header-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.25rem 0;
+  padding: var(--spacing-lg) 0;
   position: relative;
-  z-index: 2;
+  z-index: var(--z-elevated);
 }
 
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  transition: transform 0.3s ease;
+  gap: var(--spacing-md);
+  transition: transform var(--transition-base);
   position: relative;
 }
 
@@ -233,12 +220,12 @@ const handleLocaleSelect = (key: string | number) => {
 }
 
 .app-logo {
-  font-size: 36px;
-  line-height: 1;
-  filter: drop-shadow(0 3px 6px rgba(255, 182, 193, 0.4));
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-size: var(--font-size-4xl);
+  line-height: var(--line-height-tight);
+  filter: drop-shadow(0 3px 6px rgba(232, 180, 184, 0.4));
+  transition: all var(--transition-smooth);
   position: relative;
-  z-index: 2;
+  z-index: var(--z-elevated);
   animation: float 3s ease-in-out infinite;
 }
 
@@ -260,11 +247,11 @@ const handleLocaleSelect = (key: string | number) => {
   position: absolute;
   width: 50px;
   height: 50px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 182, 193, 0.4) 0%, transparent 70%);
+  border-radius: var(--radius-full);
+  background: radial-gradient(circle, var(--color-primary-light) 0%, transparent 70%);
   opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 1;
+  transition: opacity var(--transition-base);
+  z-index: var(--z-base);
 }
 
 .logo-section:hover .logo-glow {
@@ -290,21 +277,21 @@ const handleLocaleSelect = (key: string | number) => {
 }
 
 .app-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #D9779F 0%, #C97A9A 50%, #E8A5C4 100%);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  background: linear-gradient(135deg, var(--color-primary-darker) 0%, var(--color-primary-dark) 50%, var(--color-primary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: 0.8px;
   margin: 0;
-  line-height: 1.2;
-  transition: all 0.3s ease;
+  line-height: var(--line-height-tight);
+  transition: all var(--transition-base);
   position: relative;
 }
 
 .logo-section:hover .app-title {
-  background: linear-gradient(135deg, #E8A5C4 0%, #D9779F 50%, #C97A9A 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-darker) 50%, var(--color-primary-dark) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -314,10 +301,10 @@ const handleLocaleSelect = (key: string | number) => {
 .title-underline {
   height: 3px;
   width: 0;
-  background: linear-gradient(90deg, #FFB6C1 0%, #FFA07A 100%);
-  border-radius: 2px;
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-top: 2px;
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  border-radius: var(--radius-xs);
+  transition: width var(--transition-smooth);
+  margin-top: var(--spacing-xs);
 }
 
 .logo-section:hover .title-underline {
@@ -327,13 +314,13 @@ const handleLocaleSelect = (key: string | number) => {
 .nav-section {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: var(--spacing-lg);
 }
 
 .divider {
-  width: 1px;
+  width: var(--border-width-thin);
   height: 24px;
-  background: linear-gradient(180deg, transparent 0%, rgba(255, 182, 193, 0.3) 50%, transparent 100%);
+  background: linear-gradient(180deg, transparent 0%, var(--border-color-base) 50%, transparent 100%);
 }
 
 .warm-menu {
@@ -345,12 +332,12 @@ const handleLocaleSelect = (key: string | number) => {
 }
 
 .warm-menu :deep(.n-menu-item) {
-  color: #8B6F7E;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-weight: 500;
-  padding: 10px 20px;
-  border-radius: 14px;
-  margin: 0 2px;
+  color: var(--text-secondary);
+  transition: all var(--transition-base);
+  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  margin: 0 var(--spacing-xs);
   position: relative;
   overflow: hidden;
 }
@@ -371,12 +358,10 @@ const handleLocaleSelect = (key: string | number) => {
 }
 
 .warm-menu :deep(.n-menu-item--selected) {
-  color: #D9779F !important;
-  background: linear-gradient(135deg, rgba(255, 182, 193, 0.2) 0%, rgba(255, 218, 185, 0.2) 100%) !important;
-  font-weight: 600;
-  box-shadow: 
-    0 4px 12px rgba(255, 182, 193, 0.25),
-    0 0 0 1px rgba(255, 182, 193, 0.1) inset;
+  color: var(--color-primary-darker) !important;
+  background: linear-gradient(135deg, var(--color-primary-lighter) 0%, var(--color-secondary-lighter) 100%) !important;
+  font-weight: var(--font-weight-semibold);
+  box-shadow: var(--shadow-warm-sm);
   transform: translateY(-1px);
 }
 
@@ -388,27 +373,32 @@ const handleLocaleSelect = (key: string | number) => {
   transform: translateX(-50%);
   width: 60%;
   height: 2px;
-  background: linear-gradient(90deg, #FFB6C1 0%, #FFA07A 100%);
-  border-radius: 2px;
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  border-radius: var(--radius-xs);
 }
 
 .warm-menu :deep(.n-menu-item:hover) {
-  color: #D9779F;
-  background: linear-gradient(135deg, rgba(255, 182, 193, 0.12) 0%, rgba(255, 218, 185, 0.12) 100%);
+  color: var(--color-primary-darker);
+  background: linear-gradient(135deg, var(--color-primary-lighter) 0%, var(--color-secondary-lighter) 100%);
   transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(255, 182, 193, 0.15);
+  box-shadow: var(--shadow-warm-sm);
+}
+
+.warm-menu :deep(.n-menu-item:active) {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(255, 182, 193, 0.1);
 }
 
 .locale-button,
 .settings-button {
   width: 40px;
   height: 40px;
-  border-radius: 50% !important;
+  border-radius: var(--radius-full) !important;
   background: rgba(255, 255, 255, 0.6) !important;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 182, 193, 0.3) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 6px rgba(255, 182, 193, 0.1);
+  border: var(--border-width-thin) solid var(--border-color-light) !important;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -417,17 +407,17 @@ const handleLocaleSelect = (key: string | number) => {
 .locale-button:hover,
 .settings-button:hover {
   background: rgba(255, 255, 255, 0.8) !important;
-  border-color: rgba(255, 182, 193, 0.5) !important;
-  box-shadow: 0 4px 12px rgba(255, 182, 193, 0.2);
+  border-color: var(--border-color-base) !important;
+  box-shadow: var(--shadow-warm-md);
   transform: translateY(-2px) scale(1.05);
 }
 
 .locale-icon,
 .settings-icon {
-  font-size: 20px;
-  line-height: 1;
-  filter: drop-shadow(0 2px 4px rgba(255, 182, 193, 0.3));
-  transition: transform 0.3s ease;
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-tight);
+  filter: drop-shadow(0 2px 4px rgba(232, 180, 184, 0.3));
+  transition: transform var(--transition-base);
 }
 
 .locale-button:hover .locale-icon,
@@ -435,38 +425,36 @@ const handleLocaleSelect = (key: string | number) => {
   transform: rotate(15deg) scale(1.1);
 }
 
-/* 语言下拉菜单样式 */
+/* 语言下拉菜单样式 - 使用设计系统变量 */
 :deep(.n-dropdown-menu) {
   background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 182, 193, 0.3) !important;
-  border-radius: 12px !important;
-  box-shadow: 
-    0 8px 24px rgba(255, 182, 193, 0.2),
-    0 2px 8px rgba(255, 182, 193, 0.1) !important;
-  padding: 4px !important;
-  margin-top: 8px !important;
+  border: var(--border-width-thin) solid var(--border-color-base) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-warm-lg) !important;
+  padding: var(--spacing-xs) !important;
+  margin-top: var(--spacing-sm) !important;
 }
 
 :deep(.n-dropdown-option) {
-  padding: 10px 16px !important;
-  border-radius: 8px !important;
-  margin: 2px 0 !important;
-  transition: all 0.2s ease !important;
-  color: #8B6F7E !important;
-  font-weight: 500 !important;
+  padding: var(--spacing-sm) var(--spacing-md) !important;
+  border-radius: var(--radius-md) !important;
+  margin: var(--spacing-xs) 0 !important;
+  transition: all var(--transition-fast) !important;
+  color: var(--text-secondary) !important;
+  font-weight: var(--font-weight-medium) !important;
 }
 
 :deep(.n-dropdown-option:hover) {
-  background: linear-gradient(135deg, rgba(255, 182, 193, 0.15) 0%, rgba(255, 218, 185, 0.15) 100%) !important;
-  color: #D9779F !important;
+  background: linear-gradient(135deg, var(--color-primary-lighter) 0%, var(--color-secondary-lighter) 100%) !important;
+  color: var(--color-primary-darker) !important;
   transform: translateX(2px);
 }
 
 :deep(.n-dropdown-option--selected) {
-  background: linear-gradient(135deg, rgba(255, 182, 193, 0.25) 0%, rgba(255, 218, 185, 0.25) 100%) !important;
-  color: #D9779F !important;
-  font-weight: 600 !important;
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-secondary-light) 100%) !important;
+  color: var(--color-primary-darker) !important;
+  font-weight: var(--font-weight-semibold) !important;
 }
 
 .header-decoration {
@@ -474,13 +462,13 @@ const handleLocaleSelect = (key: string | number) => {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 1px;
+  height: var(--border-width-thin);
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 182, 193, 0.3) 20%,
-    rgba(255, 182, 193, 0.5) 50%,
-    rgba(255, 182, 193, 0.3) 80%,
+    var(--border-color-light) 20%,
+    var(--border-color-base) 50%,
+    var(--border-color-light) 80%,
     transparent 100%
   );
   opacity: 0.6;
@@ -489,10 +477,10 @@ const handleLocaleSelect = (key: string | number) => {
 .content-wrapper {
   width: 100%;
   margin: 0;
-  padding: 2rem 1.5rem;
+  padding: var(--spacing-xl) var(--spacing-lg);
   min-height: calc(100vh - 100px);
   position: relative;
-  z-index: 1;
+  z-index: var(--z-base);
   box-sizing: border-box;
 }
 
@@ -500,6 +488,10 @@ const handleLocaleSelect = (key: string | number) => {
 @media (max-width: 1200px) {
   .content-wrapper {
     padding: 1.5rem 1rem;
+  }
+  
+  .header-container {
+    padding: 0 1.5rem;
   }
 }
 
@@ -541,11 +533,19 @@ const handleLocaleSelect = (key: string | number) => {
   .content-wrapper {
     padding: 1rem 0.75rem;
   }
+  
+  .warm-header {
+    backdrop-filter: blur(20px) saturate(180%);
+  }
 }
 
 @media (max-width: 480px) {
   .app-title {
     font-size: 1.25rem;
+  }
+  
+  .app-logo {
+    font-size: 24px;
   }
   
   .warm-menu :deep(.n-menu-item) {
@@ -562,6 +562,14 @@ const handleLocaleSelect = (key: string | number) => {
   .locale-icon,
   .settings-icon {
     font-size: 18px;
+  }
+  
+  .header-content {
+    padding: 0.75rem 0;
+  }
+  
+  .logo-section {
+    gap: 0.75rem;
   }
 }
 </style>

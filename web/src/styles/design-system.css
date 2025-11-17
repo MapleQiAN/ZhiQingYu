@@ -1,0 +1,185 @@
+/* 企业级专业设计系统 - 保持温馨治愈感 */
+
+:root {
+  /* ========== 颜色系统 - 专业但温暖 ========== */
+  
+  /* 主色调 - 保持温暖但更专业 */
+  --color-primary: #E8B4B8;           /* 柔和的玫瑰色 */
+  --color-primary-light: #F5D7DA;    /* 浅玫瑰 */
+  --color-primary-lighter: #FAE8EA;  /* 极浅玫瑰 */
+  --color-primary-dark: #D49BA0;     /* 深玫瑰 */
+  --color-primary-darker: #C08287;   /* 更深玫瑰 */
+  
+  /* 辅助色 - 温暖的桃色系 */
+  --color-secondary: #F4C2A1;         /* 温暖桃色 */
+  --color-secondary-light: #F9D9C2;  /* 浅桃色 */
+  --color-secondary-lighter: #FCE8D8; /* 极浅桃色 */
+  
+  /* 中性色 - 专业但柔和 */
+  --color-neutral-50: #FDFCFB;       /* 最浅灰 */
+  --color-neutral-100: #FAF8F6;      /* 浅灰 */
+  --color-neutral-200: #F5F2EF;      /* 更浅灰 */
+  --color-neutral-300: #E8E5E2;      /* 浅灰 */
+  --color-neutral-400: #D4D1CE;      /* 中灰 */
+  --color-neutral-500: #A8A5A2;      /* 标准灰 */
+  --color-neutral-600: #7A7774;      /* 深灰 */
+  --color-neutral-700: #5C5956;      /* 更深灰 */
+  --color-neutral-800: #3E3B38;      /* 非常深灰 */
+  --color-neutral-900: #2A2724;      /* 最深灰 */
+  
+  /* 语义色 */
+  --color-success: #A8D5BA;          /* 柔和的绿色 */
+  --color-success-light: #D4E9DC;   /* 浅绿 */
+  --color-warning: #F5D89F;          /* 柔和的黄色 */
+  --color-warning-light: #FAE8C7;   /* 浅黄 */
+  --color-error: #E8B4B8;            /* 柔和的红色（与主色一致） */
+  --color-error-light: #F5D7DA;     /* 浅红 */
+  --color-info: #B4D4E8;             /* 柔和的蓝色 */
+  --color-info-light: #D7E8F5;       /* 浅蓝 */
+  
+  /* 背景色 */
+  --bg-primary: #FFFCF9;              /* 主背景 - 温暖的米白色 */
+  --bg-secondary: #FFF9F5;           /* 次背景 */
+  --bg-tertiary: #FFF5ED;            /* 第三背景 */
+  --bg-elevated: #FFFFFF;            /* 卡片背景 */
+  --bg-overlay: rgba(42, 39, 36, 0.4); /* 遮罩层 */
+  
+  /* 文本色 */
+  --text-primary: #2A2724;           /* 主文本 */
+  --text-secondary: #5C5956;         /* 次文本 */
+  --text-tertiary: #7A7774;          /* 第三文本 */
+  --text-disabled: #A8A5A2;          /* 禁用文本 */
+  --text-inverse: #FFFFFF;           /* 反色文本 */
+  
+  /* ========== 间距系统 - 8px基准 ========== */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+  --spacing-4xl: 96px;
+  
+  /* ========== 字体系统 - 专业层次 ========== */
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
+                      'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 
+                      'Microsoft YaHei', 'Source Han Sans CN', sans-serif;
+  --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', 
+                      'Consolas', 'Courier New', monospace;
+  
+  /* 字体大小 */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+  --font-size-4xl: 36px;
+  --font-size-5xl: 48px;
+  
+  /* 字重 */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* 行高 */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  --line-height-loose: 2;
+  
+  /* ========== 圆角系统 - 精致统一 ========== */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+  
+  /* ========== 阴影系统 - 专业层次 ========== */
+  --shadow-xs: 0 1px 2px rgba(42, 39, 36, 0.04);
+  --shadow-sm: 0 2px 4px rgba(42, 39, 36, 0.06), 
+               0 1px 2px rgba(42, 39, 36, 0.04);
+  --shadow-md: 0 4px 8px rgba(42, 39, 36, 0.08), 
+               0 2px 4px rgba(42, 39, 36, 0.06);
+  --shadow-lg: 0 8px 16px rgba(42, 39, 36, 0.1), 
+               0 4px 8px rgba(42, 39, 36, 0.08);
+  --shadow-xl: 0 16px 32px rgba(42, 39, 36, 0.12), 
+               0 8px 16px rgba(42, 39, 36, 0.1);
+  --shadow-2xl: 0 24px 48px rgba(42, 39, 36, 0.15), 
+                0 12px 24px rgba(42, 39, 36, 0.12);
+  
+  /* 温暖色调的阴影 */
+  --shadow-warm-sm: 0 2px 8px rgba(232, 180, 184, 0.12), 
+                    0 1px 4px rgba(232, 180, 184, 0.08);
+  --shadow-warm-md: 0 4px 16px rgba(232, 180, 184, 0.15), 
+                    0 2px 8px rgba(232, 180, 184, 0.12);
+  --shadow-warm-lg: 0 8px 24px rgba(232, 180, 184, 0.18), 
+                    0 4px 12px rgba(232, 180, 184, 0.15);
+  
+  /* ========== 边框系统 ========== */
+  --border-width-thin: 1px;
+  --border-width-base: 1.5px;
+  --border-width-thick: 2px;
+  
+  --border-color-light: rgba(232, 180, 184, 0.2);
+  --border-color-base: rgba(232, 180, 184, 0.3);
+  --border-color-strong: rgba(232, 180, 184, 0.4);
+  --border-color-neutral: rgba(168, 165, 162, 0.2);
+  
+  /* ========== 过渡动画 ========== */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  
+  /* ========== Z-index层级 ========== */
+  --z-base: 1;
+  --z-elevated: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  
+  /* ========== 容器宽度 ========== */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+  --container-2xl: 1536px;
+  
+  /* ========== 断点 ========== */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+}
+
+/* ========== 工具类 ========== */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.text-disabled { color: var(--text-disabled); }
+
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.bg-elevated { background-color: var(--bg-elevated); }
+
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+.shadow-warm-md { box-shadow: var(--shadow-warm-md); }
+
+.rounded-md { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-xl { border-radius: var(--radius-xl); }
+

@@ -602,13 +602,31 @@ const goToStats = () => {
   gap: 20px;
   border: 2px solid transparent;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--card-color), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s ease;
+  }
 
   &:hover {
     border-color: var(--card-color);
     box-shadow: 0 4px 20px rgba(217, 119, 159, 0.3);
     transform: translateY(-4px);
+  }
+
+  &:hover::before {
+    transform: translateX(0);
   }
 
   .stat-icon {
@@ -621,6 +639,30 @@ const goToStats = () => {
     color: white;
     flex-shrink: 0;
     box-shadow: 0 4px 12px rgba(217, 119, 159, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card:hover .stat-icon {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 6px 20px rgba(217, 119, 159, 0.4);
+  }
+
+  .stat-icon::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .stat-card:hover .stat-icon::after {
+    opacity: 1;
   }
 
   .stat-content {
@@ -722,11 +764,29 @@ const goToStats = () => {
     border-radius: 8px;
     margin-bottom: 8px;
     background: #fafafa;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: linear-gradient(180deg, #D9779F 0%, #C97A9A 100%);
+      transform: scaleY(0);
+      transition: transform 0.3s ease;
+    }
 
     &:hover {
       background: linear-gradient(135deg, rgba(217, 119, 159, 0.1), rgba(201, 122, 154, 0.1));
       transform: translateX(4px);
+    }
+
+    &:hover::before {
+      transform: scaleY(1);
     }
 
     .concept-rank {
@@ -788,18 +848,35 @@ const goToStats = () => {
     border-radius: 12px;
     background: #fafafa;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(217, 119, 159, 0.1), transparent);
+      transition: left 0.5s ease;
+    }
 
     &:hover {
       background: white;
       border-color: rgba(217, 119, 159, 0.5);
       box-shadow: 0 4px 16px rgba(217, 119, 159, 0.2);
       transform: translateX(4px);
+    }
 
-      .action-arrow {
-        transform: translateX(4px);
-      }
+    &:hover::before {
+      left: 100%;
+    }
+
+    &:hover .action-arrow {
+      transform: translateX(4px);
     }
 
     .action-icon {
@@ -812,6 +889,12 @@ const goToStats = () => {
       color: white;
       flex-shrink: 0;
       box-shadow: 0 4px 12px rgba(217, 119, 159, 0.3);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .action-card:hover .action-icon {
+      transform: scale(1.1) rotate(5deg);
+      box-shadow: 0 6px 18px rgba(217, 119, 159, 0.4);
     }
 
     .action-content {

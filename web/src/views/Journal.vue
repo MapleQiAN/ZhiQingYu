@@ -366,6 +366,19 @@ const formatTime = (dateStr: string) => {
   background: rgba(255, 250, 245, 0.6);
   border: 2px solid transparent;
   position: relative;
+  overflow: hidden;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #FFB6C1 0%, #FFA07A 100%);
+  transform: scaleY(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .timeline-item:hover {
@@ -375,11 +388,19 @@ const formatTime = (dateStr: string) => {
   box-shadow: 0 4px 16px rgba(255, 182, 193, 0.15);
 }
 
+.timeline-item:hover::before {
+  transform: scaleY(1);
+}
+
 .timeline-item-active {
   background: linear-gradient(135deg, rgba(255, 182, 193, 0.2) 0%, rgba(255, 218, 185, 0.2) 100%);
   border-color: rgba(255, 182, 193, 0.45);
   box-shadow: 0 6px 20px rgba(255, 182, 193, 0.25);
   transform: translateX(4px);
+}
+
+.timeline-item-active::before {
+  transform: scaleY(1);
 }
 
 .timeline-dot-wrapper {
@@ -393,6 +414,31 @@ const formatTime = (dateStr: string) => {
   border-radius: 50%;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   border: 2px solid white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.timeline-item:hover .timeline-dot {
+  transform: scale(1.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.timeline-item-active .timeline-dot {
+  transform: scale(1.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.timeline-dot::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: white;
+  opacity: 0.8;
 }
 
 .timeline-content {
@@ -552,12 +598,30 @@ const formatTime = (dateStr: string) => {
   font-weight: 500 !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 6px rgba(255, 182, 193, 0.1);
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+}
+
+.topic-tag::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
 }
 
 .topic-tag:hover {
   transform: translateY(-3px) scale(1.05);
   box-shadow: 0 4px 12px rgba(255, 182, 193, 0.25);
   border-color: rgba(255, 182, 193, 0.5) !important;
+}
+
+.topic-tag:hover::before {
+  left: 100%;
 }
 
 .messages-section {
@@ -584,8 +648,26 @@ const formatTime = (dateStr: string) => {
   border-radius: 18px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-left: 4px solid;
-  animation: slideIn 0.4s ease;
+  animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 8px rgba(255, 182, 193, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.message-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 182, 193, 0.5), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+
+.message-card:hover::before {
+  transform: translateX(100%);
 }
 
 @keyframes slideIn {

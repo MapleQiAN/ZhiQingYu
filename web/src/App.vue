@@ -32,6 +32,8 @@ const dateLocale = computed(() => {
 </script>
 
 <style>
+@import './styles/design-system.css';
+
 * {
   margin: 0;
   padding: 0;
@@ -39,79 +41,71 @@ const dateLocale = computed(() => {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  background: linear-gradient(135deg, #FFF9F5 0%, #FFF5ED 50%, #FFF0E6 100%);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  background: var(--bg-primary);
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(232, 180, 184, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(244, 194, 161, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 40% 20%, rgba(232, 180, 184, 0.05) 0%, transparent 50%);
   background-attachment: fixed;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #4A4A4A;
+  color: var(--text-primary);
   position: relative;
   overflow-x: hidden;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    radial-gradient(circle at 20% 50%, rgba(255, 182, 193, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(255, 218, 185, 0.06) 0%, transparent 50%),
-    radial-gradient(circle at 40% 20%, rgba(255, 192, 203, 0.05) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
-}
 
 #app {
   min-height: 100vh;
   position: relative;
-  z-index: 1;
+  z-index: var(--z-base);
 }
 
-/* 优化滚动条样式 */
+/* 优化滚动条样式 - 使用设计系统变量 */
 ::-webkit-scrollbar {
   width: 12px;
   height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 182, 193, 0.08);
-  border-radius: 12px;
+  background: var(--color-neutral-100);
+  border-radius: var(--radius-full);
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, rgba(255, 182, 193, 0.4) 0%, rgba(255, 218, 185, 0.4) 100%);
-  border-radius: 12px;
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-secondary-light) 100%);
+  border-radius: var(--radius-full);
   border: 2px solid rgba(255, 255, 255, 0.2);
   background-clip: padding-box;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-base);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, rgba(255, 182, 193, 0.6) 0%, rgba(255, 218, 185, 0.6) 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 2px 8px rgba(255, 182, 193, 0.3);
+  box-shadow: var(--shadow-warm-sm);
 }
 
 ::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(135deg, rgba(255, 182, 193, 0.7) 0%, rgba(255, 218, 185, 0.7) 100%);
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-secondary) 100%);
 }
 
-/* 优化选择文本样式 */
+/* 优化选择文本样式 - 使用设计系统变量 */
 ::selection {
-  background: linear-gradient(135deg, rgba(255, 182, 193, 0.35) 0%, rgba(255, 218, 185, 0.35) 100%);
-  color: #8B6F7E;
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-secondary-light) 100%);
+  color: var(--text-primary);
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
 }
 
 ::-moz-selection {
-  background: linear-gradient(135deg, rgba(255, 182, 193, 0.35) 0%, rgba(255, 218, 185, 0.35) 100%);
-  color: #8B6F7E;
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-secondary-light) 100%);
+  color: var(--text-primary);
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
 }
 
@@ -121,15 +115,15 @@ body::before {
   outline-offset: 0 !important;
 }
 
-/* 优化输入框样式 */
+/* 优化输入框样式 - 使用设计系统变量 */
 input, textarea {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-base);
   outline: none !important;
 }
 
 input:focus, textarea:focus {
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(255, 182, 193, 0.15);
+  box-shadow: 0 0 0 3px var(--color-primary-lighter);
 }
 
 /* 移除所有元素的默认outline */
@@ -139,13 +133,72 @@ div:focus {
   outline: none !important;
 }
 
-/* 优化按钮点击效果 */
+/* 优化按钮点击效果 - 使用设计系统变量 */
 button {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-fast);
+  cursor: pointer;
 }
 
 button:active {
   transform: scale(0.98);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 优化链接样式 - 使用设计系统变量 */
+a {
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  color: var(--color-primary);
+}
+
+a:hover {
+  opacity: 0.8;
+  color: var(--color-primary-dark);
+}
+
+/* 优化图片加载效果 */
+img {
+  transition: opacity 0.3s ease;
+}
+
+img[loading] {
+  opacity: 0;
+}
+
+/* 优化卡片悬停效果 - 使用设计系统变量 */
+.n-card {
+  transition: all var(--transition-base);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.n-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* 优化加载动画 - 使用设计系统变量 */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.loading-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(
+    to right,
+    var(--color-primary-lighter) 0%,
+    var(--color-primary-light) 50%,
+    var(--color-primary-lighter) 100%
+  );
+  background-size: 1000px 100%;
 }
 
 /* ========== 全局移除 Naive UI 组件的绿色验证边框 ========== */
