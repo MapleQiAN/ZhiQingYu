@@ -83,9 +83,26 @@ class ChatService:
                 messages,
                 user_profile
             )
+            logger = logging.getLogger(__name__)
+            logger.info("=" * 80)
+            logger.info("[Chat Service] AI回复生成完成")
+            logger.info(f"  用户消息: {user_message.content if user_message else 'N/A'}")
+            logger.info(f"  回复长度: {len(llm_result.reply)} 字符")
+            logger.info(f"  完整回复内容:\n{llm_result.reply}")
+            logger.info(f"  情绪: {llm_result.emotion}, 强度: {llm_result.intensity}")
+            logger.info(f"  主题: {llm_result.topics}, 风险等级: {llm_result.risk_level}")
+            logger.info("=" * 80)
         except Exception as e:
             # 如果新算法失败，回退到旧方法
+            logger = logging.getLogger(__name__)
+            logger.warning(f"对话算法失败，回退到旧方法: {str(e)}", exc_info=True)
             llm_result = self.llm_provider.generate_reply(messages)
+            logger.info("=" * 80)
+            logger.info("[Chat Service] AI回复生成完成（使用旧方法）")
+            logger.info(f"  用户消息: {user_message.content if user_message else 'N/A'}")
+            logger.info(f"  回复长度: {len(llm_result.reply)} 字符")
+            logger.info(f"  完整回复内容:\n{llm_result.reply}")
+            logger.info("=" * 80)
         
         # 6. 应用风险检测规则（二次检查）
         if user_message:

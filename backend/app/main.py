@@ -1,12 +1,20 @@
 """
 ZhiQingYu - AI情绪陪伴应用后端主入口
 """
+import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from app.db import engine, Base
 from app.api import chat, daily, stats, ai_config
 from app.middleware.error_handler import validation_exception_handler, general_exception_handler
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 # 创建数据库表
 Base.metadata.create_all(bind=engine)

@@ -3,10 +3,13 @@ OpenAI Provider实现
 """
 import os
 import json
+import logging
 from openai import OpenAI
 from app.core.llm_provider import LLMProvider, LLMResult
 from app.schemas.chat import ChatMessage
 from app.schemas.style import StyleProfile, ParsedState, ReplyPlan, InterventionConfig
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAIProvider(LLMProvider):
@@ -48,10 +51,21 @@ class OpenAIProvider(LLMProvider):
             )
             
             result_text = response.choices[0].message.content
+            logger.info(f"[OpenAI Provider] 原始API响应: {result_text}")
+            
             result_dict = json.loads(result_text)
             
+            reply = result_dict.get("reply", "")
+            logger.info(f"[OpenAI Provider] 解析后的回复内容:")
+            logger.info(f"  回复长度: {len(reply)} 字符")
+            logger.info(f"  回复内容: {reply}")
+            logger.info(f"  情绪: {result_dict.get('emotion', 'neutral')}")
+            logger.info(f"  强度: {result_dict.get('intensity', 2)}")
+            logger.info(f"  主题: {result_dict.get('topics', [])}")
+            logger.info(f"  风险等级: {result_dict.get('risk_level', 'normal')}")
+            
             return LLMResult(
-                reply=result_dict.get("reply", ""),
+                reply=reply,
                 emotion=result_dict.get("emotion", "neutral"),
                 intensity=result_dict.get("intensity", 2),
                 topics=result_dict.get("topics", []),
@@ -137,22 +151,34 @@ class OpenAIProvider(LLMProvider):
             )
             
             result_text = response.choices[0].message.content
+            logger.info(f"[OpenAI Provider] 结构化回复 - 原始API响应: {result_text}")
+            
             result_dict = json.loads(result_text)
             
             # 合并三段式回复
             reply_parts = []
             if "emotion_reflection" in result_dict:
-                reply_parts.append(result_dict["emotion_reflection"])
+                emotion_part = result_dict["emotion_reflection"]
+                logger.info(f"[OpenAI Provider] 情绪镜像部分: {emotion_part} (长度: {len(emotion_part)})")
+                reply_parts.append(emotion_part)
             if "cognitive_clarification" in result_dict:
-                reply_parts.append(result_dict["cognitive_clarification"])
+                clarification_part = result_dict["cognitive_clarification"]
+                logger.info(f"[OpenAI Provider] 认知澄清部分: {clarification_part} (长度: {len(clarification_part)})")
+                reply_parts.append(clarification_part)
             if "action_suggestions" in result_dict:
                 actions = result_dict["action_suggestions"]
                 if isinstance(actions, list):
-                    reply_parts.append("\n\n".join(actions))
+                    actions_text = "\n\n".join(actions)
+                    logger.info(f"[OpenAI Provider] 行动建议部分: {actions_text} (长度: {len(actions_text)})")
+                    reply_parts.append(actions_text)
                 else:
+                    logger.info(f"[OpenAI Provider] 行动建议部分: {actions} (长度: {len(actions)})")
                     reply_parts.append(actions)
             
             reply = "\n\n".join(reply_parts) if reply_parts else result_dict.get("reply", "")
+            logger.info(f"[OpenAI Provider] 最终合并后的完整回复:")
+            logger.info(f"  总长度: {len(reply)} 字符")
+            logger.info(f"  完整内容:\n{reply}")
             
             return LLMResult(
                 reply=reply,
