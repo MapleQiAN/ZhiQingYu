@@ -105,31 +105,11 @@
               <h3>{{ $t('overview.emotionTypeDistribution') }}</h3>
             </div>
             <div class="chart-container">
-              <div v-if="!loading && emotionData.length > 0" style="width: 100%; height: 350px">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      :data="emotionData"
-                      :data-key="'value'"
-                      :name-key="'emotion'"
-                      cx="50%"
-                      cy="50%"
-                      inner-radius="40%"
-                      outer-radius="70%"
-                      :label="false"
-                    >
-                      <Cell v-for="(entry, index) in emotionData" :key="index" :fill="getPieColor(index)" />
-                    </Pie>
-                    <Tooltip :formatter="(value: number) => `${value}%`" />
-                    <Legend
-                      vertical-align="middle"
-                      align="right"
-                      layout="vertical"
-                      :wrapper-style="{ paddingLeft: '20px' }"
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+              <v-chart
+                v-if="!loading && emotionData.length > 0"
+                :option="pieChartOption"
+                style="width: 100%; height: 350px"
+              />
               <n-empty v-else-if="!loading" :description="$t('common.noData')" size="small" />
               <n-spin v-else size="small" />
             </div>
@@ -251,14 +231,23 @@ import {
   NDataTable,
   NScrollbar,
 } from 'naive-ui'
+import { use } from 'echarts/core'
+import { PieChart } from 'echarts/charts'
 import {
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent,
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+import VChart from 'vue-echarts'
+
+use([
   PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts'
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent,
+  CanvasRenderer,
+])
 import {
   RefreshOutline,
   CalendarOutline,
@@ -393,6 +382,60 @@ const emotionData = computed(() => {
       value: Number((value * 100).toFixed(1)),
     }))
     .sort((a, b) => b.value - a.value)
+})
+
+// ECharts 饼图配置
+const pieChartOption = computed(() => {
+  if (!emotionData.value || emotionData.value.length === 0) {
+    return {}
+  }
+
+  return {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c}% ({d}%)',
+    },
+    legend: {
+      orient: 'vertical',
+      right: 10,
+      top: 'center',
+      formatter: (name: string) => {
+        const item = emotionData.value.find((d) => d.emotion === name)
+        return item ? `${name}: ${item.value}%` : name
+      },
+    },
+    series: [
+      {
+        name: t('overview.emotionTypeDistribution'),
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['40%', '50%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 8,
+          borderColor: '#fff',
+          borderWidth: 2,
+        },
+        label: {
+          show: false,
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 14,
+            fontWeight: 'bold',
+          },
+        },
+        data: emotionData.value.map((item, index) => ({
+          value: item.value,
+          name: item.emotion,
+          itemStyle: {
+            color: getPieColor(index),
+          },
+        })),
+      },
+    ],
+  }
 })
 
 // Emotion Table Columns
