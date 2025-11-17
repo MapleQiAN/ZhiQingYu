@@ -7,8 +7,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models import Message, Session as SessionModel, DailySummary
 from app.schemas.chat import ChatMessage
+from app.schemas.style import UserProfile
 from app.core.llm_provider import LLMProvider
 from app.core.risk_detection import upgrade_risk_level_if_needed
+from app.core.conversation_algorithm import generate_reply_with_algorithm, parse_user_message
+from app.core.style_override_detector import StyleOverrideDetector
+from app.core.safety_checker import SafetyChecker
+import logging
 
 
 class ChatService:
@@ -58,10 +63,31 @@ class ChatService:
             self.db.add(db_message)
             self.db.commit()
         
-        # 3. 调用LLM Provider
-        llm_result = self.llm_provider.generate_reply(messages)
+        # 3. 检测用户是否请求切换风格
+        style_detector = StyleOverrideDetector()
+        detected_style = None
+        if user_message and user_message.role == "user":
+            detected_style = style_detector.detect(user_message.content)
         
-        # 4. 应用风险检测规则（二次检查）
+        # 4. 获取用户配置（简化版，实际应该从数据库读取）
+        user_profile = UserProfile(
+            id=session_id,  # 临时使用session_id作为user_id
+            preferredStyleId=None,  # TODO: 从数据库读取
+            recentStyleOverrideId=detected_style  # 使用检测到的风格覆盖
+        )
+        
+        # 5. 使用对话算法生成回复
+        try:
+            llm_result = generate_reply_with_algorithm(
+                self.llm_provider,
+                messages,
+                user_profile
+            )
+        except Exception as e:
+            # 如果新算法失败，回退到旧方法
+            llm_result = self.llm_provider.generate_reply(messages)
+        
+        # 6. 应用风险检测规则（二次检查）
         if user_message:
             final_risk_level = upgrade_risk_level_if_needed(
                 llm_result.risk_level,
@@ -70,7 +96,34 @@ class ChatService:
             )
             llm_result.risk_level = final_risk_level
         
-        # 5. 保存助手回复
+        # 6.5. 质量自检（在保存前检查回复质量）
+        if user_message:
+            try:
+                # 重新解析用户消息以获取ParsedState
+                parsed = parse_user_message(user_message)
+                safety_checker = SafetyChecker()
+                check_result = safety_checker.check_reply_quality(
+                    user_message=user_message,
+                    assistant_reply=llm_result.reply,
+                    parsed=parsed
+                )
+                
+                if not check_result.passed:
+                    # 质量检查失败，记录日志
+                    logger = logging.getLogger(__name__)
+                    logger.warning(
+                        f"回复质量检查失败: {check_result.reason}. "
+                        f"用户消息: {user_message.content[:50]}... "
+                        f"助手回复: {llm_result.reply[:50]}..."
+                    )
+                    # 注意：这里不阻止回复，只是记录日志
+                    # 如果需要，可以在这里触发重新生成或使用默认回复
+            except Exception as e:
+                # 质量检查本身出错，记录但不影响主流程
+                logger = logging.getLogger(__name__)
+                logger.error(f"质量检查过程出错: {str(e)}", exc_info=True)
+        
+        # 7. 保存助手回复
         assistant_message = Message(
             session_id=session_id,
             role="assistant",
@@ -81,7 +134,7 @@ class ChatService:
         )
         self.db.add(assistant_message)
         
-        # 6. 更新或创建DailySummary
+        # 8. 更新或创建DailySummary
         self._update_daily_summary(
             date.today(),
             llm_result.emotion,
