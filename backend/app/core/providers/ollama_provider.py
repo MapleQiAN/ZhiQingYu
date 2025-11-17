@@ -40,7 +40,10 @@ class OllamaProvider(LLMProvider):
                         "model": self.model,
                         "messages": chat_messages,
                         "format": "json",
-                        "stream": False
+                        "stream": False,
+                        "options": {
+                            "num_predict": 2000  # 增加最大token数，允许更长的回复
+                        }
                     }
                 )
                 response.raise_for_status()
@@ -79,22 +82,30 @@ class OllamaProvider(LLMProvider):
 
 你的任务是：
 1. 理解用户当前的情绪和困扰场景
-2. 用温和、现实的语气输出一段自然语言回复
+2. 用温和、现实的语气输出一段详细、丰富的自然语言回复
 3. 为用户这条消息打标签：
    - emotion: 从以下选项中选择一个：sadness, anxiety, anger, tired, joy, neutral, relief, calm
    - intensity: 1-5的整数，表示情绪强度
    - topics: 主题列表，如 ["study", "work", "relationship", "family", "self-doubt"] 等
 4. 判断是否存在高危情绪（如自残/自杀意念），如果存在则 risk_level = "high"，否则为 "normal"
 
+重要要求：
+- 你的回复应该详细、丰富、有深度，不要过于简短
+- 尽量提供充分的共情、理解和建议
+- 回复长度应该在150-500字之间，根据用户问题的复杂程度适当调整
+- 可以包含具体的例子、场景描述、情感共鸣等内容
+- 让用户感受到被充分理解和关心
+
 对于 risk_level = "high" 的情况，你的回复必须：
 - 不提供任何具体方法或工具
 - 强调理解和关心
 - 引导用户联系现实世界可信的人（亲友、老师、医生等）
 - 提醒用户尽快寻求专业心理或医疗帮助
+- 即使在这种情况下，也要提供充分的情感支持和理解
 
 请以严格的JSON格式输出，格式如下：
 {
-  "reply": "你的自然语言回复",
+  "reply": "你的详细自然语言回复（150-500字）",
   "emotion": "情绪标签",
   "intensity": 情绪强度数字,
   "topics": ["主题1", "主题2"],
@@ -133,7 +144,10 @@ class OllamaProvider(LLMProvider):
                         "model": self.model,
                         "messages": chat_messages,
                         "format": "json",
-                        "stream": False
+                        "stream": False,
+                        "options": {
+                            "num_predict": 2000  # 增加最大token数，允许更长的回复
+                        }
                     }
                 )
                 response.raise_for_status()

@@ -43,7 +43,8 @@ class OpenAIProvider(LLMProvider):
                 model=self.model,
                 messages=chat_messages,
                 response_format={"type": "json_object"},
-                temperature=0.7
+                temperature=0.7,
+                max_tokens=2000  # 增加最大token数，允许更长的回复
             )
             
             result_text = response.choices[0].message.content
@@ -72,22 +73,30 @@ class OpenAIProvider(LLMProvider):
 
 你的任务是：
 1. 理解用户当前的情绪和困扰场景
-2. 用温和、现实的语气输出一段自然语言回复
+2. 用温和、现实的语气输出一段详细、丰富的自然语言回复
 3. 为用户这条消息打标签：
    - emotion: 从以下选项中选择一个：sadness, anxiety, anger, tired, joy, neutral, relief, calm
    - intensity: 1-5的整数，表示情绪强度
    - topics: 主题列表，如 ["study", "work", "relationship", "family", "self-doubt"] 等
 4. 判断是否存在高危情绪（如自残/自杀意念），如果存在则 risk_level = "high"，否则为 "normal"
 
+重要要求：
+- 你的回复应该详细、丰富、有深度，不要过于简短
+- 尽量提供充分的共情、理解和建议
+- 回复长度应该在500字以上，根据用户问题的复杂程度适当调整
+- 可以包含具体的例子、场景描述、情感共鸣等内容
+- 让用户感受到被充分理解和关心
+
 对于 risk_level = "high" 的情况，你的回复必须：
 - 不提供任何具体方法或工具
 - 强调理解和关心
 - 引导用户联系现实世界可信的人（亲友、老师、医生等）
 - 提醒用户尽快寻求专业心理或医疗帮助
+- 即使在这种情况下，也要提供充分的情感支持和理解
 
 请以严格的JSON格式输出，格式如下：
 {
-  "reply": "你的自然语言回复",
+  "reply": "你的详细自然语言回复（500字以上）",
   "emotion": "情绪标签",
   "intensity": 情绪强度数字,
   "topics": ["主题1", "主题2"],
@@ -123,7 +132,8 @@ class OpenAIProvider(LLMProvider):
                 model=self.model,
                 messages=chat_messages,
                 response_format={"type": "json_object"},
-                temperature=0.7
+                temperature=0.7,
+                max_tokens=2000  # 增加最大token数，允许更长的回复
             )
             
             result_text = response.choices[0].message.content
@@ -205,6 +215,13 @@ class OpenAIProvider(LLMProvider):
         prompt = f"""你是一个情绪陪伴 AI，受过基础心理学训练，但不是医生，不进行诊断或治疗。
 
 你的目标是：接住用户情绪，帮助澄清问题，并给出小而可行的建议。
+
+重要要求：
+- 你的回复应该详细、丰富、有深度，不要过于简短
+- 尽量提供充分的共情、理解和建议
+- 每部分内容都应该充实，情绪镜像部分至少200-300字，解释澄清部分至少200-300字，行动建议部分至少100-200字
+- 可以包含具体的例子、场景描述、情感共鸣等内容
+- 让用户感受到被充分理解和关心
 
 当前风格配置：
 - 语气: {tone_desc}
