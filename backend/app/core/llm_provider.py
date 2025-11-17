@@ -2,9 +2,10 @@
 LLM Provider抽象接口和实现
 """
 from abc import ABC, abstractmethod
-from typing import Literal
+from typing import Literal, Optional
 from pydantic import BaseModel
 from app.schemas.chat import ChatMessage
+from app.schemas.style import StyleProfile, ParsedState, ReplyPlan, InterventionConfig
 
 
 class LLMResult(BaseModel):
@@ -22,10 +23,34 @@ class LLMProvider(ABC):
     @abstractmethod
     def generate_reply(self, messages: list[ChatMessage]) -> LLMResult:
         """
-        生成回复和情绪分析
+        生成回复和情绪分析（旧接口，保持兼容）
         
         Args:
             messages: 对话消息列表
+            
+        Returns:
+            LLMResult: 包含回复、情绪分析等信息
+        """
+        pass
+    
+    @abstractmethod
+    def generate_structured_reply(
+        self,
+        messages: list[ChatMessage],
+        parsed: ParsedState,
+        style: StyleProfile,
+        plan: ReplyPlan,
+        interventions: list[InterventionConfig],
+    ) -> LLMResult:
+        """
+        生成结构化回复（支持风格系统和三段式结构）
+        
+        Args:
+            messages: 对话消息列表
+            parsed: 情绪解析结果
+            style: 当前风格
+            plan: 回复规划
+            interventions: 干预模块列表
             
         Returns:
             LLMResult: 包含回复、情绪分析等信息
@@ -69,4 +94,16 @@ class MockLLMProvider(LLMProvider):
             topics=topics,
             risk_level=risk_level
         )
+    
+    def generate_structured_reply(
+        self,
+        messages: list[ChatMessage],
+        parsed: ParsedState,
+        style: StyleProfile,
+        plan: ReplyPlan,
+        interventions: list[InterventionConfig],
+    ) -> LLMResult:
+        """Mock结构化回复生成"""
+        # 使用旧的 generate_reply 作为后备
+        return self.generate_reply(messages)
 
