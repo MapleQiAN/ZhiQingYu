@@ -6,6 +6,10 @@ from sqlalchemy.orm import Session
 from app.core.llm_provider import LLMProvider, MockLLMProvider
 from app.core.providers.openai_provider import OpenAIProvider
 from app.core.providers.ollama_provider import OllamaProvider
+from app.core.providers.gemini_provider import GeminiProvider
+from app.core.providers.claude_provider import ClaudeProvider
+from app.core.providers.minimax_provider import MiniMaxProvider
+from app.core.providers.doubao_provider import DoubaoProvider
 from app.db import SessionLocal
 
 
@@ -64,18 +68,44 @@ def get_llm_provider(db: Session = None) -> LLMProvider:
 def _create_provider_from_config(config) -> LLMProvider:
     """根据数据库配置创建provider实例"""
     try:
-        if config.provider == "openai":
+        provider_name = config.provider.lower()
+        
+        if provider_name == "openai":
             return OpenAIProvider(
                 api_key=config.api_key,
                 base_url=config.base_url,
                 model=config.model
             )
-        elif config.provider == "ollama":
+        elif provider_name == "ollama":
             return OllamaProvider(
                 base_url=config.base_url,
                 model=config.model
             )
-        elif config.provider in ["deepseek", "qwen", "moonshot", "zhipu", "baidu"]:
+        elif provider_name == "gemini":
+            return GeminiProvider(
+                api_key=config.api_key,
+                base_url=config.base_url,
+                model=config.model
+            )
+        elif provider_name == "claude":
+            return ClaudeProvider(
+                api_key=config.api_key,
+                base_url=config.base_url,
+                model=config.model
+            )
+        elif provider_name == "minimax":
+            return MiniMaxProvider(
+                api_key=config.api_key,
+                base_url=config.base_url,
+                model=config.model
+            )
+        elif provider_name == "doubao":
+            return DoubaoProvider(
+                api_key=config.api_key,
+                base_url=config.base_url,
+                model=config.model
+            )
+        elif provider_name in ["deepseek", "qwen", "moonshot", "zhipu", "baidu"]:
             # 这些提供商使用OpenAI兼容的API
             return OpenAIProvider(
                 api_key=config.api_key,

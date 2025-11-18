@@ -264,11 +264,15 @@ const formRules: FormRules = {
 const providerOptions = computed(() => [
   { label: t('settings.openai'), value: 'openai' },
   { label: t('settings.ollama'), value: 'ollama' },
+  { label: t('settings.gemini'), value: 'gemini' },
+  { label: t('settings.claude'), value: 'claude' },
   { label: t('settings.deepseek'), value: 'deepseek' },
   { label: t('settings.qwen'), value: 'qwen' },
   { label: t('settings.moonshot'), value: 'moonshot' },
   { label: t('settings.zhipu'), value: 'zhipu' },
   { label: t('settings.baidu'), value: 'baidu' },
+  { label: t('settings.minimax'), value: 'minimax' },
+  { label: t('settings.doubao'), value: 'doubao' },
 ])
 
 // 获取提供商标签
@@ -283,11 +287,15 @@ const getDefaultBaseUrl = () => {
   const urlMap: Record<string, string> = {
     openai: t('settings.openaiDefaultUrl'),
     ollama: t('settings.ollamaDefaultUrl'),
+    gemini: t('settings.geminiDefaultUrl'),
+    claude: t('settings.claudeDefaultUrl'),
     deepseek: t('settings.deepseekDefaultUrl'),
     qwen: t('settings.qwenDefaultUrl'),
     moonshot: t('settings.moonshotDefaultUrl'),
     zhipu: t('settings.zhipuDefaultUrl'),
     baidu: t('settings.baiduDefaultUrl'),
+    minimax: t('settings.minimaxDefaultUrl'),
+    doubao: t('settings.doubaoDefaultUrl'),
   }
   return urlMap[provider] || ''
 }
