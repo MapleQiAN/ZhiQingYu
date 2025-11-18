@@ -117,13 +117,13 @@ const buildFiveStepSections = (cardData: CardData) => {
   const sections = [
     buildSection({
       icon: '💭',
-      title: '情绪收纳箱',
+      title: '我听见了你的心声',
       accent: '#FFB6C1',
       content: renderDoubleColumn(cardData.step1_emotion_mirror, cardData.step1_problem_restate),
     }),
     buildSection({
       icon: '🔍',
-      title: '一起剖析问题',
+      title: '一起剖析问题吧',
       accent: '#B0C4DE',
       content: cardData.step2_breakdown ? renderMarkdown(cardData.step2_breakdown) : '',
     }),
