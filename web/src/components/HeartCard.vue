@@ -21,11 +21,11 @@
           <div class="section-content">
             <div v-if="cardData.step1_emotion_mirror" class="step-content-item">
               <div class="step-label">{{ $t('chat.emotionMirror') }}</div>
-              <div class="step-text">{{ cardData.step1_emotion_mirror }}</div>
+              <div class="step-text markdown-body" v-html="renderMarkdown(cardData.step1_emotion_mirror)" />
             </div>
             <div v-if="cardData.step1_problem_restate" class="step-content-item">
               <div class="step-label">{{ $t('chat.problemRestate') }}</div>
-              <div class="step-text">{{ cardData.step1_problem_restate }}</div>
+              <div class="step-text markdown-body" v-html="renderMarkdown(cardData.step1_problem_restate)" />
             </div>
           </div>
         </div>
@@ -36,7 +36,7 @@
             <span class="section-icon">🔍</span>
             <span class="section-title">{{ $t('chat.step2') }}</span>
           </div>
-          <div class="section-content">{{ cardData.step2_breakdown }}</div>
+          <div class="section-content markdown-body" v-html="renderMarkdown(cardData.step2_breakdown)" />
         </div>
 
         <!-- Step 3: 专业视角解释 -->
@@ -45,7 +45,7 @@
             <span class="section-icon">💡</span>
             <span class="section-title">{{ $t('chat.step3') }}</span>
           </div>
-          <div class="section-content">{{ cardData.step3_explanation }}</div>
+          <div class="section-content markdown-body" v-html="renderMarkdown(cardData.step3_explanation)" />
         </div>
 
         <!-- Step 4: 小步可执行建议 -->
@@ -56,11 +56,14 @@
           </div>
           <div class="section-content">
             <ul v-if="Array.isArray(cardData.step4_suggestions)" class="suggestion-list">
-              <li v-for="(item, index) in cardData.step4_suggestions" :key="index" class="suggestion-item">
-                {{ item }}
-              </li>
+              <li
+                v-for="(item, index) in cardData.step4_suggestions"
+                :key="index"
+                class="suggestion-item markdown-body"
+                v-html="renderMarkdown(item)"
+              />
             </ul>
-            <div v-else class="suggestion-text">{{ cardData.step4_suggestions }}</div>
+            <div v-else class="suggestion-text markdown-body" v-html="renderMarkdown(cardData.step4_suggestions)" />
           </div>
         </div>
 
@@ -70,7 +73,7 @@
             <span class="section-icon">🌺</span>
             <span class="section-title">{{ $t('chat.step5') }}</span>
           </div>
-          <div class="section-content">{{ cardData.step5_summary }}</div>
+          <div class="section-content markdown-body" v-html="renderMarkdown(cardData.step5_summary)" />
         </div>
       </template>
 
@@ -82,7 +85,7 @@
             <span class="section-icon">💭</span>
             <span class="section-title">{{ $t('chat.emotionEcho') }}</span>
           </div>
-          <div class="section-content">{{ cardData.emotion_echo }}</div>
+          <div class="section-content markdown-body" v-html="renderMarkdown(cardData.emotion_echo)" />
         </div>
 
         <!-- 认知澄清板块 -->
@@ -91,7 +94,7 @@
             <span class="section-icon">🔍</span>
             <span class="section-title">{{ $t('chat.clarification') }}</span>
           </div>
-          <div class="section-content">{{ cardData.clarification }}</div>
+          <div class="section-content markdown-body" v-html="renderMarkdown(cardData.clarification)" />
         </div>
 
         <!-- 建议板块 -->
@@ -102,11 +105,14 @@
           </div>
           <div class="section-content">
             <ul v-if="Array.isArray(cardData.suggestion)" class="suggestion-list">
-              <li v-for="(item, index) in cardData.suggestion" :key="index" class="suggestion-item">
-                {{ item }}
-              </li>
+              <li
+                v-for="(item, index) in cardData.suggestion"
+                :key="index"
+                class="suggestion-item markdown-body"
+                v-html="renderMarkdown(item)"
+              />
             </ul>
-            <div v-else class="suggestion-text">{{ cardData.suggestion }}</div>
+            <div class="suggestion-text markdown-body" v-else v-html="renderMarkdown(cardData.suggestion)" />
           </div>
         </div>
       </template>
@@ -117,6 +123,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { CardData } from '@/lib/api'
+import { renderMarkdown } from '@/lib/markdown'
 
 interface Props {
   cardData: CardData
@@ -381,6 +388,45 @@ const isThreePartMode = computed(() => {
 .step-text {
   line-height: 1.8;
   color: var(--text-primary);
+}
+
+.markdown-body {
+  font-size: var(--font-size-base);
+  line-height: 1.8;
+  color: var(--text-primary);
+}
+
+.markdown-body p {
+  margin: 0 0 var(--spacing-sm);
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 1.2rem;
+  margin: 0 0 var(--spacing-sm);
+}
+
+.markdown-body li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.markdown-body code {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.markdown-body pre {
+  background: rgba(0, 0, 0, 0.05);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+
+.markdown-body a {
+  color: var(--color-primary);
+  text-decoration: underline;
 }
 </style>
 
