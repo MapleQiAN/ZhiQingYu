@@ -40,7 +40,7 @@ class SafetyChecker:
         self,
         reply_text: str,
         parsed: ParsedState,
-        plan: Optional[dict] = None,
+        # plan: Optional[dict] = None,
     ) -> tuple[bool, str]:
         """
         检查回复的安全性和质量（增强版：支持5步骤检查）
