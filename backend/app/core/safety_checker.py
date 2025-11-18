@@ -36,6 +36,10 @@ class SafetyChecker:
         "你就是太",
     ]
     
+    MIN_REPLY_LENGTH = 10
+    MAX_CHUNK_LENGTH = 2000
+    MAX_TOTAL_LENGTH = 16000
+    
     def check(
         self,
         reply_text: str,
@@ -53,6 +57,32 @@ class SafetyChecker:
         Returns:
             tuple[bool, str]: (是否通过, 错误信息)
         """
+        if len(reply_text) < self.MIN_REPLY_LENGTH:
+            return False, "回复过短"
+        
+        if len(reply_text) > self.MAX_TOTAL_LENGTH:
+            return False, f"回复超出系统可检查的长度上限（{self.MAX_TOTAL_LENGTH}字）"
+        
+        if len(reply_text) <= self.MAX_CHUNK_LENGTH:
+            return self._run_checks(reply_text, parsed)
+        
+        for index, chunk in enumerate(self._chunk_reply(reply_text), start=1):
+            passed, reason = self._run_checks(chunk, parsed)
+            if not passed:
+                return False, f"第{index}段未通过检查：{reason}"
+        
+        return True, ""
+    
+    def _chunk_reply(self, reply_text: str) -> list[str]:
+        """将超长回复切分为多个可检查的片段。"""
+        chunks: list[str] = []
+        length = len(reply_text)
+        for start in range(0, length, self.MAX_CHUNK_LENGTH):
+            end = min(start + self.MAX_CHUNK_LENGTH, length)
+            chunks.append(reply_text[start:end])
+        return chunks
+    
+    def _run_checks(self, reply_text: str, parsed: ParsedState) -> tuple[bool, str]:
         reply_lower = reply_text.lower()
         
         # 1. 检查是否包含危险内容（自伤、他伤、自杀方法等）
@@ -91,13 +121,6 @@ class SafetyChecker:
                 # 如果同时包含自伤关键词和方法关键词，可能是危险内容
                 if any(kw in reply_lower for kw in ["自杀", "自残", "self-harm", "suicide"]):
                     return False, "不应提供自伤/自杀的具体方法"
-        
-        # 7. 检查长度（避免过长或过短）
-        if len(reply_text) < 10:
-            return False, "回复过短"
-        
-        if len(reply_text) > 2000:
-            return False, "回复过长"
         
         return True, ""
     
