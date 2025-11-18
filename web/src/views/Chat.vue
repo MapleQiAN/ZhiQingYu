@@ -136,11 +136,26 @@
         
         <!-- AI回复：如果有卡片数据则显示卡片，否则显示普通气泡 -->
         <div v-else>
-          <HeartCard
+          <div
             v-if="msg.card_data && hasCardData(msg.card_data)"
-            :card-data="msg.card_data"
-            class="assistant-card"
-          />
+            class="assistant-card-wrapper"
+          >
+            <HeartCard
+              :card-data="msg.card_data"
+              class="assistant-card"
+            />
+            <n-button
+              quaternary
+              size="small"
+              circle
+              class="card-fullscreen-toggle"
+              @click.stop="openCardFullscreen(msg.card_data)"
+            >
+              <template #icon>
+                <span>⤢</span>
+              </template>
+            </n-button>
+          </div>
           <div
             v-else
             :class="[
@@ -205,12 +220,34 @@
     </n-card>
     </div>
   </div>
+  <div
+    v-if="cardFullscreenVisible && fullscreenCardData"
+    class="card-fullscreen-overlay"
+  >
+    <div class="card-fullscreen-content">
+      <n-button
+        quaternary
+        circle
+        size="large"
+        class="card-fullscreen-close"
+        @click="closeCardFullscreen"
+      >
+        <template #icon>
+          <span>✕</span>
+        </template>
+      </n-button>
+      <HeartCard
+        :card-data="fullscreenCardData"
+        class="heart-card-fullscreen"
+      />
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NCard, NInput, NButton, NAlert, NSelect, NRadioGroup, NRadio, useMessage, useDialog } from 'naive-ui'
+import { NCard, NInput, NButton, NAlert, NSelect, useMessage, useDialog } from 'naive-ui'
 import {
   sendChatMessage,
   getSessions,
@@ -239,6 +276,9 @@ const selectedExperienceMode = ref<'A' | 'B' | 'C' | 'D' | null>(null)
 const lastRiskLevel = ref<'normal' | 'high'>('normal')
 const selectedAIStyle = ref<string | null>(null)
 const selectedChatMode = ref<'deep' | 'quick' | null>('deep')
+const cardFullscreenVisible = ref(false)
+const fullscreenCardData = ref<CardData | null>(null)
+let previousBodyOverflow = ''
 
 // 体验模式选项（使用computed确保国际化文本正确更新）
 const experienceModes = computed(() => [
@@ -520,6 +560,24 @@ const getEmotionLabel = (emotion: string | null) => {
     return emotion
   }
 }
+
+const openCardFullscreen = (cardData: CardData | null | undefined) => {
+  if (!cardData) return
+  fullscreenCardData.value = cardData
+  cardFullscreenVisible.value = true
+  previousBodyOverflow = document.body.style.overflow
+  document.body.style.overflow = 'hidden'
+}
+
+const closeCardFullscreen = () => {
+  cardFullscreenVisible.value = false
+  fullscreenCardData.value = null
+  document.body.style.overflow = previousBodyOverflow
+}
+
+onUnmounted(() => {
+  document.body.style.overflow = previousBodyOverflow
+})
 </script>
 
 <style scoped>
@@ -1325,6 +1383,58 @@ const getEmotionLabel = (emotion: string | null) => {
 .assistant-card {
   max-width: 100%;
   margin: 0;
+}
+
+.assistant-card-wrapper {
+  position: relative;
+}
+
+.card-fullscreen-toggle {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 4px 12px rgba(232, 180, 184, 0.2) !important;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.card-fullscreen-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(232, 180, 184, 0.3) !important;
+}
+
+.card-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  z-index: 2000;
+}
+
+.card-fullscreen-content {
+  position: relative;
+  width: min(960px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-2xl);
+}
+
+.card-fullscreen-close {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1) !important;
+}
+
+.heart-card-fullscreen {
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .loading-bubble {
