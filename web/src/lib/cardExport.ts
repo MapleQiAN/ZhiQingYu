@@ -89,16 +89,6 @@ const buildSection = (options: {
   `
 }
 
-const buildQuestionSection = (cardData: CardData) => {
-  if (!cardData.step1_problem_restate?.trim()) return ''
-  return buildSection({
-    icon: '❓',
-    title: '你提到的问题',
-    accent: '#F4A261',
-    content: renderMarkdown(cardData.step1_problem_restate),
-  })
-}
-
 const buildThreePartSections = (cardData: CardData) => {
   const sections = [
     buildSection({
@@ -164,8 +154,6 @@ export const generateCardHtml = (cardData: CardData) => {
   const date = formatDate()
   const useThreePart = shouldUseThreePart(cardData)
   const sectionsHtml = useThreePart ? buildThreePartSections(cardData) : buildFiveStepSections(cardData)
-  const questionSectionHtml = buildQuestionSection(cardData)
-  const contentHtml = `${questionSectionHtml}${sectionsHtml}`
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -365,7 +353,7 @@ export const generateCardHtml = (cardData: CardData) => {
           <div class="card-tagline">HEART · CARE · MOMENTS</div>
           <div class="card-date">${date}</div>
         </header>
-        ${contentHtml}
+        ${sectionsHtml}
         <div class="card-footer">
           <span>筑一方温柔心岛</span>
         </div>
