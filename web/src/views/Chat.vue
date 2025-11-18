@@ -81,6 +81,33 @@
             </span>
           </div>
         </div>
+        <!-- AI配置选择器 -->
+        <div class="ai-config-selectors">
+          <div class="selector-group">
+            <label class="selector-label">{{ $t('chat.aiStyle') }}</label>
+            <n-select
+              v-model:value="selectedAIStyle"
+              :options="aiStyles"
+              :placeholder="$t('chat.aiStyle')"
+              clearable
+              size="small"
+              class="style-selector"
+            />
+          </div>
+          <div class="selector-group">
+            <label class="selector-label">{{ $t('chat.aiMode') }}</label>
+            <n-radio-group v-model:value="selectedChatMode" size="small" class="mode-radio-group">
+              <n-radio
+                v-for="mode in chatModes"
+                :key="mode.value"
+                :value="mode.value"
+                class="mode-radio"
+              >
+                {{ mode.label }}
+              </n-radio>
+            </n-radio-group>
+          </div>
+        </div>
       </n-card>
 
       <!-- 聊天记录区域 -->
@@ -204,7 +231,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NCard, NInput, NButton, NAlert, useMessage, useDialog } from 'naive-ui'
+import { NCard, NInput, NButton, NAlert, NSelect, NRadioGroup, NRadio, useMessage, useDialog } from 'naive-ui'
 import {
   sendChatMessage,
   getSessions,
@@ -231,6 +258,8 @@ const sessions = ref<SessionItem[]>([])
 const loadingSessions = ref(false)
 const selectedExperienceMode = ref<'A' | 'B' | 'C' | 'D' | null>(null)
 const lastRiskLevel = ref<'normal' | 'high'>('normal')
+const selectedAIStyle = ref<string | null>(null)
+const selectedChatMode = ref<'deep' | 'quick' | null>('deep')
 
 // 体验模式选项（使用computed确保国际化文本正确更新）
 const experienceModes = computed(() => [
@@ -238,6 +267,24 @@ const experienceModes = computed(() => [
   { value: 'B' as const, label: t('chat.modeB'), icon: '💡' },
   { value: 'C' as const, label: t('chat.modeC'), icon: '💪' },
   { value: 'D' as const, label: t('chat.modeD'), icon: '🌊' },
+])
+
+// AI风格选项
+const aiStyles = computed(() => [
+  { value: 'comfort', label: t('chat.styleComfort') },
+  { value: 'analyst', label: t('chat.styleAnalyst') },
+  { value: 'coach', label: t('chat.styleCoach') },
+  { value: 'mentor', label: t('chat.styleMentor') },
+  { value: 'friend', label: t('chat.styleFriend') },
+  { value: 'listener', label: t('chat.styleListener') },
+  { value: 'growth', label: t('chat.styleGrowth') },
+  { value: 'crisis_safe', label: t('chat.styleCrisisSafe') },
+])
+
+// AI模式选项
+const chatModes = computed(() => [
+  { value: 'deep' as const, label: t('chat.deepChatMode') },
+  { value: 'quick' as const, label: t('chat.quickMode') },
 ])
 
 const scrollToBottom = async () => {
@@ -286,6 +333,8 @@ const handleSwitchSession = async (id: string) => {
       todayEmotion.value = null // 重置情绪，因为不同会话的情绪可能不同
       lastRiskLevel.value = 'normal' // 重置风险级别
       selectedExperienceMode.value = null // 重置体验模式
+      selectedAIStyle.value = null // 重置AI风格
+      selectedChatMode.value = 'deep' // 重置聊天模式
       scrollToBottom()
     }
   } catch (error) {
@@ -303,6 +352,8 @@ const handleNewChat = () => {
   todayEmotion.value = null
   input.value = ''
   selectedExperienceMode.value = null
+  selectedAIStyle.value = null
+  selectedChatMode.value = 'deep'
   lastRiskLevel.value = 'normal'
 }
 
@@ -414,6 +465,8 @@ const handleSend = async () => {
       session_id: sessionId.value,
       messages: newMessages,
       experience_mode: selectedExperienceMode.value,
+      ai_style: selectedAIStyle.value,
+      chat_mode: selectedChatMode.value,
     })
 
     if (response.error) {
@@ -824,6 +877,88 @@ const getEmotionLabel = (emotion: string | null) => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.ai-config-selectors {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: var(--border-width-thin) solid var(--border-color-light);
+  display: flex;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.selector-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex: 1;
+  min-width: 200px;
+}
+
+.selector-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.style-selector {
+  width: 100%;
+}
+
+.style-selector :deep(.n-base-selection) {
+  border-radius: var(--radius-lg);
+  border: var(--border-width-thin) solid var(--border-color-base);
+  background: var(--bg-elevated);
+  transition: all var(--transition-base);
+}
+
+.style-selector :deep(.n-base-selection:hover) {
+  border-color: var(--color-primary);
+}
+
+.style-selector :deep(.n-base-selection--active) {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-lighter);
+}
+
+.mode-radio-group {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.mode-radio {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-base);
+}
+
+.mode-radio :deep(.n-radio__label) {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.mode-radio :deep(.n-radio__dot) {
+  border-color: var(--border-color-base);
+}
+
+.mode-radio :deep(.n-radio--checked .n-radio__dot) {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+
+.mode-radio :deep(.n-radio--checked .n-radio__label) {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.mode-radio:hover :deep(.n-radio__dot) {
+  border-color: var(--color-primary);
 }
 
 .messages-container {
@@ -1502,6 +1637,15 @@ const getEmotionLabel = (emotion: string | null) => {
   
   .emotion-left {
     width: 100%;
+  }
+  
+  .ai-config-selectors {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+  
+  .selector-group {
+    min-width: 100%;
   }
   
   .message-bubble {

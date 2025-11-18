@@ -44,6 +44,8 @@ export interface ChatRequest {
   session_id?: string | null
   messages: ChatMessage[]
   experience_mode?: 'A' | 'B' | 'C' | 'D' | null  // 体验模式：A:只想被听 B:想搞懂 C:想要建议 D:系统深聊
+  ai_style?: string | null  // AI风格：comfort, analyst, coach, mentor, friend, listener, growth, crisis_safe
+  chat_mode?: 'deep' | 'quick' | null  // 聊天模式：deep(深聊模式) 或 quick(快速模式)
 }
 
 export interface ChatResponse {
