@@ -41,10 +41,24 @@
             :class="['session-item', { active: session.id === sessionId }]"
             @click="handleSwitchSession(session.id)"
           >
-            <div class="session-preview">{{ session.preview || $t('chat.newChat') }}</div>
-            <div class="session-time">
-              {{ formatSessionTime(session.latest_message_at || session.created_at) }}
+            <div class="session-content">
+              <div class="session-preview">{{ session.preview || $t('chat.newChat') }}</div>
+              <div class="session-time">
+                {{ formatSessionTime(session.latest_message_at || session.created_at) }}
+              </div>
             </div>
+            <n-button
+              quaternary
+              circle
+              size="small"
+              class="session-delete-button"
+              @click.stop="handleDeleteSession(session.id)"
+              :disabled="loading"
+            >
+              <template #icon>
+                <span>🗑️</span>
+              </template>
+            </n-button>
           </div>
         </div>
       </div>
@@ -190,11 +204,12 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NCard, NInput, NButton, NAlert, useMessage } from 'naive-ui'
+import { NCard, NInput, NButton, NAlert, useMessage, useDialog } from 'naive-ui'
 import {
   sendChatMessage,
   getSessions,
   getSessionMessages,
+  deleteSession,
   type ChatMessage,
   type SessionItem,
   type CardData,
@@ -203,6 +218,7 @@ import HeartCard from '@/components/HeartCard.vue'
 
 const { t } = useI18n()
 const message = useMessage()
+const dialog = useDialog()
 
 const messages = ref<ChatMessage[]>([])
 const input = ref('')
@@ -288,6 +304,37 @@ const handleNewChat = () => {
   input.value = ''
   selectedExperienceMode.value = null
   lastRiskLevel.value = 'normal'
+}
+
+// 删除会话
+const handleDeleteSession = async (id: string) => {
+  dialog.warning({
+    title: t('common.confirm'),
+    content: t('chat.deleteConfirm'),
+    positiveText: t('common.confirm'),
+    negativeText: t('common.cancel'),
+    onPositiveClick: async () => {
+      try {
+        const response = await deleteSession(id)
+        if (response.error) {
+          message.error(`${t('common.error')}: ${response.error.message}`)
+          return
+        }
+
+        // 如果删除的是当前会话，清空当前会话
+        if (id === sessionId.value) {
+          handleNewChat()
+        }
+
+        // 刷新会话列表
+        await loadSessions()
+        message.success(t('chat.deleteSuccess'))
+      } catch (error) {
+        console.error('Error deleting session:', error)
+        message.error(t('chat.deleteFailed'))
+      }
+    },
+  })
 }
 
 // 格式化会话时间
@@ -594,6 +641,10 @@ const getEmotionLabel = (emotion: string | null) => {
   background: var(--color-primary-lighter);
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
 }
 
 .session-item::before {
@@ -628,10 +679,17 @@ const getEmotionLabel = (emotion: string | null) => {
   transform: scaleY(1);
 }
 
+.session-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
 .session-preview {
   font-size: var(--font-size-sm);
   color: var(--text-primary);
-  margin-bottom: var(--spacing-xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -652,6 +710,21 @@ const getEmotionLabel = (emotion: string | null) => {
 .session-item.active .session-time {
   color: var(--text-primary);
   font-weight: var(--font-weight-medium);
+}
+
+.session-delete-button {
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  flex-shrink: 0;
+}
+
+.session-item:hover .session-delete-button {
+  opacity: 1;
+}
+
+.session-delete-button:hover {
+  background-color: var(--color-error-lighter) !important;
+  color: var(--color-error) !important;
 }
 
 .chat-container {

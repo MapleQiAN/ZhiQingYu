@@ -131,6 +131,16 @@ export async function getSessionMessages(
   return response.data
 }
 
+// 删除会话
+export async function deleteSession(
+  sessionId: string
+): Promise<ApiResponse<{ success: boolean; message: string }>> {
+  const response = await api.delete<ApiResponse<{ success: boolean; message: string }>>(
+    `/sessions/${sessionId}`
+  )
+  return response.data
+}
+
 // 日记API
 export async function getDailyList(
   from: string,

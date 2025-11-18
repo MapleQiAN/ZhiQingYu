@@ -150,3 +150,42 @@ async def get_session_messages(
             message=f"获取会话消息时发生错误: {str(e)}"
         )
         return ApiResponse(data=None, error=error_detail)
+
+
+@router.delete("/sessions/{session_id}", response_model=ApiResponse[dict])
+async def delete_session(
+    session_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    删除指定会话及其所有消息
+    """
+    try:
+        # 验证会话是否存在
+        session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+        if not session:
+            error_detail = ErrorDetail(
+                code="SESSION_NOT_FOUND",
+                message=f"会话不存在: {session_id}"
+            )
+            return ApiResponse(data=None, error=error_detail)
+        
+        # 删除该会话的所有消息
+        db.query(Message).filter(Message.session_id == session_id).delete()
+        
+        # 删除会话
+        db.delete(session)
+        db.commit()
+        
+        return ApiResponse(
+            data={"success": True, "message": "会话已删除"},
+            error=None
+        )
+    
+    except Exception as e:
+        db.rollback()
+        error_detail = ErrorDetail(
+            code="DELETE_SESSION_ERROR",
+            message=f"删除会话时发生错误: {str(e)}"
+        )
+        return ApiResponse(data=None, error=error_detail)

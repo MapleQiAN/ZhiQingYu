@@ -36,7 +36,7 @@ export default {
     emotionEcho: '情感回音',
     clarification: '认知澄清',
     suggestion: '建议',
-    experienceMode: '体验模式',
+    experienceMode: '倾诉模式',
     modeA: '只想被听',
     modeB: '想搞懂',
     modeC: '想要建议',
@@ -51,6 +51,9 @@ export default {
     step5: '温柔收尾 & 小结',
     emotionMirror: '情绪镜像',
     problemRestate: '问题复述',
+    deleteConfirm: '确定要删除这个会话吗？此操作不可恢复。',
+    deleteSuccess: '会话已删除',
+    deleteFailed: '删除会话失败，请稍后重试',
   },
   journal: {
     title: '日记',
