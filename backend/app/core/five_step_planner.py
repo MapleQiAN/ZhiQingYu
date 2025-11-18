@@ -46,8 +46,11 @@ class FiveStepPlanner:
                 step_contents[5] = self._plan_step5(parsed, style, conversation_state)
         
         # 构建ReplyPlan（保持兼容性）
+        # useThreePart: False表示使用5步骤模式（5卡片），True表示使用简洁模式（3卡片）
+        # 当执行5步骤时，useThreePart应该为False
+        # 只有当明确需要简洁模式时（如某些特定风格），才设置为True
         structure = {
-            "useThreePart": len(steps_to_execute) >= 3,
+            "useThreePart": False,  # 默认使用5步骤模式
             "parts": self._map_steps_to_parts(steps_to_execute)
         }
         

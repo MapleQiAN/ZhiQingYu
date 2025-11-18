@@ -9,101 +9,107 @@
 
     <!-- 卡片内容区域 -->
     <div class="card-content">
-      <!-- 5步骤内容展示（优先） -->
-      <!-- Step 1: 情绪接住 & 问题确认 -->
-      <div v-if="cardData.step1_emotion_mirror || cardData.step1_problem_restate" class="card-section step-section step1-section">
-        <div class="section-header">
-          <span class="section-icon">💭</span>
-          <span class="section-title">{{ $t('chat.step1') }}</span>
-        </div>
-        <div class="section-content">
-          <div v-if="cardData.step1_emotion_mirror" class="step-content-item">
-            <div class="step-label">{{ $t('chat.emotionMirror') }}</div>
-            <div class="step-text">{{ cardData.step1_emotion_mirror }}</div>
+      <!-- 根据useThreePart字段决定显示模式 -->
+      <!-- 5步骤模式（5卡片）：当useThreePart为false或未定义但有5步骤数据时 -->
+      <template v-if="!isThreePartMode">
+        <!-- Step 1: 情绪接住 & 问题确认 -->
+        <div v-if="cardData.step1_emotion_mirror || cardData.step1_problem_restate" class="card-section step-section step1-section">
+          <div class="section-header">
+            <span class="section-icon">💭</span>
+            <span class="section-title">{{ $t('chat.step1') }}</span>
           </div>
-          <div v-if="cardData.step1_problem_restate" class="step-content-item">
-            <div class="step-label">{{ $t('chat.problemRestate') }}</div>
-            <div class="step-text">{{ cardData.step1_problem_restate }}</div>
+          <div class="section-content">
+            <div v-if="cardData.step1_emotion_mirror" class="step-content-item">
+              <div class="step-label">{{ $t('chat.emotionMirror') }}</div>
+              <div class="step-text">{{ cardData.step1_emotion_mirror }}</div>
+            </div>
+            <div v-if="cardData.step1_problem_restate" class="step-content-item">
+              <div class="step-label">{{ $t('chat.problemRestate') }}</div>
+              <div class="step-text">{{ cardData.step1_problem_restate }}</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Step 2: 结构化拆解问题 -->
-      <div v-if="cardData.step2_breakdown" class="card-section step-section step2-section">
-        <div class="section-header">
-          <span class="section-icon">🔍</span>
-          <span class="section-title">{{ $t('chat.step2') }}</span>
+        <!-- Step 2: 结构化拆解问题 -->
+        <div v-if="cardData.step2_breakdown" class="card-section step-section step2-section">
+          <div class="section-header">
+            <span class="section-icon">🔍</span>
+            <span class="section-title">{{ $t('chat.step2') }}</span>
+          </div>
+          <div class="section-content">{{ cardData.step2_breakdown }}</div>
         </div>
-        <div class="section-content">{{ cardData.step2_breakdown }}</div>
-      </div>
 
-      <!-- Step 3: 专业视角解释 -->
-      <div v-if="cardData.step3_explanation" class="card-section step-section step3-section">
-        <div class="section-header">
-          <span class="section-icon">💡</span>
-          <span class="section-title">{{ $t('chat.step3') }}</span>
+        <!-- Step 3: 专业视角解释 -->
+        <div v-if="cardData.step3_explanation" class="card-section step-section step3-section">
+          <div class="section-header">
+            <span class="section-icon">💡</span>
+            <span class="section-title">{{ $t('chat.step3') }}</span>
+          </div>
+          <div class="section-content">{{ cardData.step3_explanation }}</div>
         </div>
-        <div class="section-content">{{ cardData.step3_explanation }}</div>
-      </div>
 
-      <!-- Step 4: 小步可执行建议 -->
-      <div v-if="hasStep4Suggestions" class="card-section step-section step4-section">
-        <div class="section-header">
-          <span class="section-icon">✨</span>
-          <span class="section-title">{{ $t('chat.step4') }}</span>
+        <!-- Step 4: 小步可执行建议 -->
+        <div v-if="hasStep4Suggestions" class="card-section step-section step4-section">
+          <div class="section-header">
+            <span class="section-icon">✨</span>
+            <span class="section-title">{{ $t('chat.step4') }}</span>
+          </div>
+          <div class="section-content">
+            <ul v-if="Array.isArray(cardData.step4_suggestions)" class="suggestion-list">
+              <li v-for="(item, index) in cardData.step4_suggestions" :key="index" class="suggestion-item">
+                {{ item }}
+              </li>
+            </ul>
+            <div v-else class="suggestion-text">{{ cardData.step4_suggestions }}</div>
+          </div>
         </div>
-        <div class="section-content">
-          <ul v-if="Array.isArray(cardData.step4_suggestions)" class="suggestion-list">
-            <li v-for="(item, index) in cardData.step4_suggestions" :key="index" class="suggestion-item">
-              {{ item }}
-            </li>
-          </ul>
-          <div v-else class="suggestion-text">{{ cardData.step4_suggestions }}</div>
-        </div>
-      </div>
 
-      <!-- Step 5: 温柔收尾 & 小结 -->
-      <div v-if="cardData.step5_summary" class="card-section step-section step5-section">
-        <div class="section-header">
-          <span class="section-icon">🌺</span>
-          <span class="section-title">{{ $t('chat.step5') }}</span>
+        <!-- Step 5: 温柔收尾 & 小结 -->
+        <div v-if="cardData.step5_summary" class="card-section step-section step5-section">
+          <div class="section-header">
+            <span class="section-icon">🌺</span>
+            <span class="section-title">{{ $t('chat.step5') }}</span>
+          </div>
+          <div class="section-content">{{ cardData.step5_summary }}</div>
         </div>
-        <div class="section-content">{{ cardData.step5_summary }}</div>
-      </div>
+      </template>
 
-      <!-- 兼容旧版格式：情感回音板块 -->
-      <div v-if="!hasStepContent && cardData.emotion_echo" class="card-section emotion-section">
-        <div class="section-header">
-          <span class="section-icon">💭</span>
-          <span class="section-title">{{ $t('chat.emotionEcho') }}</span>
+      <!-- 简洁模式（3卡片）：当useThreePart为true时 -->
+      <template v-else>
+        <!-- 情感回音板块 -->
+        <div v-if="cardData.emotion_echo" class="card-section emotion-section">
+          <div class="section-header">
+            <span class="section-icon">💭</span>
+            <span class="section-title">{{ $t('chat.emotionEcho') }}</span>
+          </div>
+          <div class="section-content">{{ cardData.emotion_echo }}</div>
         </div>
-        <div class="section-content">{{ cardData.emotion_echo }}</div>
-      </div>
 
-      <!-- 兼容旧版格式：认知澄清板块 -->
-      <div v-if="!hasStepContent && cardData.clarification" class="card-section clarification-section">
-        <div class="section-header">
-          <span class="section-icon">🔍</span>
-          <span class="section-title">{{ $t('chat.clarification') }}</span>
+        <!-- 认知澄清板块 -->
+        <div v-if="cardData.clarification" class="card-section clarification-section">
+          <div class="section-header">
+            <span class="section-icon">🔍</span>
+            <span class="section-title">{{ $t('chat.clarification') }}</span>
+          </div>
+          <div class="section-content">{{ cardData.clarification }}</div>
         </div>
-        <div class="section-content">{{ cardData.clarification }}</div>
-      </div>
 
-      <!-- 兼容旧版格式：建议板块 -->
-      <div v-if="!hasStepContent && hasSuggestions" class="card-section suggestion-section">
-        <div class="section-header">
-          <span class="section-icon">✨</span>
-          <span class="section-title">{{ $t('chat.suggestion') }}</span>
+        <!-- 建议板块 -->
+        <div v-if="hasSuggestions" class="card-section suggestion-section">
+          <div class="section-header">
+            <span class="section-icon">✨</span>
+            <span class="section-title">{{ $t('chat.suggestion') }}</span>
+          </div>
+          <div class="section-content">
+            <ul v-if="Array.isArray(cardData.suggestion)" class="suggestion-list">
+              <li v-for="(item, index) in cardData.suggestion" :key="index" class="suggestion-item">
+                {{ item }}
+              </li>
+            </ul>
+            <div v-else class="suggestion-text">{{ cardData.suggestion }}</div>
+          </div>
         </div>
-        <div class="section-content">
-          <ul v-if="Array.isArray(cardData.suggestion)" class="suggestion-list">
-            <li v-for="(item, index) in cardData.suggestion" :key="index" class="suggestion-item">
-              {{ item }}
-            </li>
-          </ul>
-          <div v-else class="suggestion-text">{{ cardData.suggestion }}</div>
-        </div>
-      </div>
+      </template>
     </div>
   </div>
 </template>
@@ -143,6 +149,23 @@ const hasStepContent = computed(() => {
     props.cardData.step4_suggestions ||
     props.cardData.step5_summary
   )
+})
+
+// 判断是否使用简洁模式（3卡片）
+// 如果useThreePart明确为true，使用3卡片模式
+// 如果useThreePart为false或未定义，但有5步骤数据，使用5卡片模式
+// 如果useThreePart未定义且没有5步骤数据，但有3卡片数据，使用3卡片模式（兼容旧版）
+const isThreePartMode = computed(() => {
+  // 如果明确指定了useThreePart，直接使用
+  if (props.cardData.useThreePart !== undefined) {
+    return props.cardData.useThreePart
+  }
+  // 如果没有明确指定，但有5步骤数据，使用5卡片模式
+  if (hasStepContent.value) {
+    return false
+  }
+  // 否则使用3卡片模式（兼容旧版）
+  return true
 })
 </script>
 

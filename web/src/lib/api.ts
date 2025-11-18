@@ -20,10 +20,12 @@ export interface ApiResponse<T> {
 
 export interface CardData {
   theme?: string
+  useThreePart?: boolean  // 是否使用简洁模式（3卡片），false表示使用5步骤模式（5卡片）
+  // 简洁模式（3卡片）字段
   emotion_echo?: string
   clarification?: string
   suggestion?: string[] | string
-  // 5步骤相关字段（可选）
+  // 5步骤模式（5卡片）字段
   step1_emotion_mirror?: string  // Step 1: 情绪镜像
   step1_problem_restate?: string  // Step 1: 问题复述
   step2_breakdown?: string  // Step 2: 问题拆解
