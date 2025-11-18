@@ -66,6 +66,9 @@ export default {
     styleListener: '极简倾听',
     styleGrowth: '成长陪伴',
     styleCrisisSafe: '危机安全响应',
+    exportCard: '导出卡片',
+    exportSuccess: '已导出为HTML卡片',
+    exportFailed: '导出失败，请稍后重试',
   },
   journal: {
     title: '日记',

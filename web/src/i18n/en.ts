@@ -66,6 +66,9 @@ export default {
     styleListener: 'Minimal Listener',
     styleGrowth: 'Growth Companion',
     styleCrisisSafe: 'Crisis Safe Response',
+    exportCard: 'Export Card',
+    exportSuccess: 'Card exported as HTML',
+    exportFailed: 'Failed to export card, please try again later',
   },
   journal: {
     title: 'Journal',

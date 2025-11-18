@@ -136,25 +136,32 @@
         
         <!-- AI回复：如果有卡片数据则显示卡片，否则显示普通气泡 -->
         <div v-else>
-          <div
-            v-if="msg.card_data && hasCardData(msg.card_data)"
-            class="assistant-card-wrapper"
-          >
-            <HeartCard
-              :card-data="msg.card_data"
-              class="assistant-card"
-            />
-            <n-button
-              quaternary
-              size="small"
-              circle
-              class="card-fullscreen-toggle"
-              @click.stop="openCardFullscreen(msg.card_data)"
-            >
-              <template #icon>
-                <span>⤢</span>
-              </template>
-            </n-button>
+          <div v-if="msg.card_data && hasCardData(msg.card_data)" class="assistant-card-wrapper">
+            <HeartCard :card-data="msg.card_data" class="assistant-card" />
+            <div class="card-action-buttons">
+              <n-button
+                quaternary
+                size="small"
+                circle
+                class="card-action-button card-export-button"
+                @click.stop="handleExportCard(msg.card_data)"
+              >
+                <template #icon>
+                  <span>⇩</span>
+                </template>
+              </n-button>
+              <n-button
+                quaternary
+                size="small"
+                circle
+                class="card-action-button card-fullscreen-toggle"
+                @click.stop="openCardFullscreen(msg.card_data)"
+              >
+                <template #icon>
+                  <span>⤢</span>
+                </template>
+              </n-button>
+            </div>
           </div>
           <div
             v-else
@@ -225,15 +232,20 @@
     class="card-fullscreen-overlay"
   >
     <div class="card-fullscreen-content">
-      <n-button
-        quaternary
-        circle
-        size="large"
-        class="card-fullscreen-close"
-        @click="closeCardFullscreen"
-      >
+      <n-button quaternary circle size="large" class="card-fullscreen-close" @click="closeCardFullscreen">
         <template #icon>
           <span>✕</span>
+        </template>
+      </n-button>
+      <n-button
+        tertiary
+        circle
+        size="large"
+        class="card-fullscreen-export"
+        @click="handleExportCard(fullscreenCardData)"
+      >
+        <template #icon>
+          <span>⇩</span>
         </template>
       </n-button>
       <HeartCard
@@ -258,6 +270,7 @@ import {
   type CardData,
 } from '@/lib/api'
 import HeartCard from '@/components/HeartCard.vue'
+import { generateCardHtml } from '@/lib/cardExport'
 
 const { t } = useI18n()
 const message = useMessage()
@@ -573,6 +586,32 @@ const closeCardFullscreen = () => {
   cardFullscreenVisible.value = false
   fullscreenCardData.value = null
   document.body.style.overflow = previousBodyOverflow
+}
+
+const sanitizeFileName = (value: string) => {
+  return value.replace(/[\\/:*?"<>|]/g, '_')
+}
+
+const handleExportCard = (cardData?: CardData | null) => {
+  if (!cardData) return
+  try {
+    const html = generateCardHtml(cardData)
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const title = sanitizeFileName(cardData.theme?.trim() || t('chat.cardTitle'))
+    const date = new Date().toISOString().split('T')[0]
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${title}-${date}.html`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    message.success(t('chat.exportSuccess'))
+  } catch (error) {
+    console.error(error)
+    message.error(t('chat.exportFailed'))
+  }
 }
 
 onUnmounted(() => {
@@ -1389,18 +1428,33 @@ onUnmounted(() => {
   position: relative;
 }
 
-.card-fullscreen-toggle {
+.card-action-buttons {
   position: absolute;
   top: var(--spacing-sm);
   right: var(--spacing-sm);
-  background: rgba(255, 255, 255, 0.8) !important;
-  box-shadow: 0 4px 12px rgba(232, 180, 184, 0.2) !important;
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  display: flex;
+  gap: var(--spacing-xs);
+  z-index: 2;
 }
 
-.card-fullscreen-toggle:hover {
+.card-action-button {
+  background: rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 4px 12px rgba(232, 180, 184, 0.2) !important;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  color: var(--color-primary-dark) !important;
+}
+
+.card-action-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(232, 180, 184, 0.3) !important;
+}
+
+.card-export-button {
+  border: 1px solid rgba(232, 180, 184, 0.4) !important;
+}
+
+.card-fullscreen-toggle {
+  border: 1px solid rgba(232, 180, 184, 0.2) !important;
 }
 
 .card-fullscreen-overlay {
@@ -1430,6 +1484,15 @@ onUnmounted(() => {
   right: var(--spacing-md);
   background: rgba(255, 255, 255, 0.8) !important;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1) !important;
+}
+
+.card-fullscreen-export {
+  position: absolute;
+  top: var(--spacing-md);
+  right: calc(var(--spacing-md) + 52px);
+  background: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 6px 18px rgba(232, 180, 184, 0.2) !important;
+  color: var(--color-primary-dark) !important;
 }
 
 .heart-card-fullscreen {
