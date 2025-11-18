@@ -25,7 +25,7 @@ class ChatService:
         self.db = db
         self.llm_provider = llm_provider
     
-    def process_chat(self, session_id: str | None, messages: list[ChatMessage]) -> dict:
+    def process_chat(self, session_id: str | None, messages: list[ChatMessage], experience_mode: str | None = None) -> dict:
         """
         处理聊天请求
         
@@ -72,10 +72,16 @@ class ChatService:
             detected_style = style_detector.detect(user_message.content)
         
         # 4. 获取用户配置（简化版，实际应该从数据库读取）
+        # 如果前端提供了experience_mode，优先使用；否则使用用户偏好或对话状态中的
+        preferred_experience_mode = experience_mode
+        if not preferred_experience_mode and conversation_state:
+            preferred_experience_mode = conversation_state.experienceMode
+        
         user_profile = UserProfile(
             id=session_id,  # 临时使用session_id作为user_id
             preferredStyleId=None,  # TODO: 从数据库读取
-            recentStyleOverrideId=detected_style  # 使用检测到的风格覆盖
+            recentStyleOverrideId=detected_style,  # 使用检测到的风格覆盖
+            preferredExperienceMode=preferred_experience_mode  # 使用前端提供的体验模式
         )
         
         # 5. 恢复对话状态（从session或创建新的）

@@ -33,7 +33,11 @@ async def chat(
         chat_service = ChatService(db, llm_provider)
         
         # 处理聊天请求
-        result = chat_service.process_chat(request.session_id, request.messages)
+        result = chat_service.process_chat(
+            request.session_id, 
+            request.messages,
+            experience_mode=request.experience_mode
+        )
         
         # 构建响应
         response = ChatResponse(**result)

@@ -17,6 +17,7 @@ class ChatRequest(BaseModel):
     """聊天请求"""
     session_id: Optional[str] = None
     messages: list[ChatMessage]
+    experience_mode: Optional[Literal["A", "B", "C", "D"]] = None  # 体验模式：A:只想被听 B:想搞懂 C:想要建议 D:系统深聊
 
 
 class ChatResponse(BaseModel):
