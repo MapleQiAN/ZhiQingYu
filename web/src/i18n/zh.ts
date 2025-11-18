@@ -169,6 +169,18 @@ export default {
     zhipuDefaultUrl: 'https://open.bigmodel.cn/api/paas/v4',
     baiduDefaultUrl: 'https://aip.baidubce.com',
     ollamaNoApiKey: 'Ollama不需要API密钥',
+    tokensUsage: 'API用量统计',
+    tokensUsageDesc: '查看API tokens使用情况',
+    totalTokens: '总Tokens',
+    promptTokens: '输入Tokens',
+    completionTokens: '输出Tokens',
+    messageCount: '消息数量',
+    dailyUsage: '每日使用量',
+    lastDays: '最近{days}天',
+    tokens: 'Tokens',
+    noTokensData: '暂无tokens使用数据',
+    loadingTokens: '加载tokens统计中...',
+    tokensStatsError: '获取tokens统计失败',
   },
 }
 

@@ -163,6 +163,92 @@
         </div>
       </n-card>
 
+      <!-- Tokens使用统计 -->
+      <n-card class="warm-card settings-card" hoverable>
+        <div class="card-header">
+          <div class="card-icon">📊</div>
+          <h2 class="card-title">{{ $t('settings.tokensUsage') }}</h2>
+        </div>
+        <div class="card-content">
+          <p class="section-desc">{{ $t('settings.tokensUsageDesc') }}</p>
+          
+          <!-- 加载状态 -->
+          <div v-if="loadingTokens" class="loading-wrapper">
+            <n-spin size="small" />
+            <span class="loading-text">{{ $t('settings.loadingTokens') }}</span>
+          </div>
+
+          <!-- 统计内容 -->
+          <div v-else-if="tokensStats" class="tokens-stats">
+            <!-- 统计卡片 -->
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">{{ $t('settings.totalTokens') }}</div>
+                <div class="stat-value">{{ formatNumber(tokensStats.total_tokens) }}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">{{ $t('settings.promptTokens') }}</div>
+                <div class="stat-value">{{ formatNumber(tokensStats.total_prompt_tokens) }}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">{{ $t('settings.completionTokens') }}</div>
+                <div class="stat-value">{{ formatNumber(tokensStats.total_completion_tokens) }}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">{{ $t('settings.messageCount') }}</div>
+                <div class="stat-value">{{ formatNumber(tokensStats.message_count) }}</div>
+              </div>
+            </div>
+
+            <!-- 时间范围选择 -->
+            <div class="tokens-controls">
+              <n-select
+                v-model:value="tokensDays"
+                :options="tokensDaysOptions"
+                @update:value="loadTokensStats"
+                style="width: 150px"
+              />
+            </div>
+
+            <!-- 每日使用量图表 -->
+            <div v-if="tokensStats.daily_usage && tokensStats.daily_usage.length > 0" class="tokens-chart">
+              <div class="chart-title">{{ $t('settings.dailyUsage') }}</div>
+              <div class="chart-container">
+                <div
+                  v-for="(day, index) in tokensStats.daily_usage"
+                  :key="day.date"
+                  class="chart-bar-wrapper"
+                >
+                  <div class="chart-bar-container">
+                    <div
+                      class="chart-bar"
+                      :style="{
+                        height: `${getBarHeight(day.total_tokens)}%`,
+                        background: 'linear-gradient(180deg, #FFB6C1 0%, #D9779F 100%)'
+                      }"
+                      :title="`${formatDate(day.date)}: ${formatNumber(day.total_tokens)} tokens`"
+                    />
+                  </div>
+                  <div class="chart-label">
+                    {{ formatShortDate(day.date) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 无数据提示 -->
+            <div v-else class="no-tokens-data">
+              <p>{{ $t('settings.noTokensData') }}</p>
+            </div>
+          </div>
+
+          <!-- 错误状态 -->
+          <div v-else-if="tokensStatsError" class="tokens-error">
+            <p>{{ $t('settings.tokensStatsError') }}</p>
+          </div>
+        </div>
+      </n-card>
+
       <!-- 关于 -->
       <n-card class="warm-card settings-card" hoverable>
         <div class="card-header">
@@ -208,7 +294,9 @@ import {
   createAIConfig,
   updateAIConfig,
   activateAIConfig,
+  getTokensStats,
   type AIConfig,
+  type TokensUsageStats,
 } from '@/lib/api'
 
 const { locale, t } = useI18n()
@@ -432,9 +520,79 @@ const handleActivateConfig = async (provider: string) => {
   }
 }
 
-// 组件挂载时加载配置
+// Tokens统计相关状态
+const loadingTokens = ref(false)
+const tokensStats = ref<TokensUsageStats | null>(null)
+const tokensStatsError = ref(false)
+const tokensDays = ref(30)
+
+const tokensDaysOptions = computed(() => [
+  { label: t('settings.lastDays', { days: 7 }), value: 7 },
+  { label: t('settings.lastDays', { days: 30 }), value: 30 },
+  { label: t('settings.lastDays', { days: 90 }), value: 90 },
+  { label: t('settings.lastDays', { days: 365 }), value: 365 },
+])
+
+// 格式化数字
+const formatNumber = (num: number) => {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(2) + 'M'
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(2) + 'K'
+  }
+  return num.toString()
+}
+
+// 格式化日期
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr)
+  return date.toLocaleDateString(locale.value === 'zh' ? 'zh-CN' : 'en-US')
+}
+
+// 格式化短日期
+const formatShortDate = (dateStr: string) => {
+  const date = new Date(dateStr)
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  return `${month}/${day}`
+}
+
+// 获取柱状图高度
+const getBarHeight = (value: number) => {
+  if (!tokensStats.value || !tokensStats.value.daily_usage) return 0
+  const maxValue = Math.max(...tokensStats.value.daily_usage.map(d => d.total_tokens))
+  if (maxValue === 0) return 0
+  return Math.max((value / maxValue) * 100, 5) // 最小高度5%
+}
+
+// 加载tokens统计
+const loadTokensStats = async () => {
+  loadingTokens.value = true
+  tokensStatsError.value = false
+  try {
+    const response = await getTokensStats(tokensDays.value)
+    if (response.error) {
+      tokensStatsError.value = true
+      message.error(response.error.message || t('settings.tokensStatsError'))
+      return
+    }
+    if (response.data) {
+      tokensStats.value = response.data
+    }
+  } catch (error) {
+    console.error('Failed to load tokens stats:', error)
+    tokensStatsError.value = true
+    message.error(t('settings.tokensStatsError'))
+  } finally {
+    loadingTokens.value = false
+  }
+}
+
+// 组件挂载时加载配置和tokens统计
 onMounted(() => {
   loadConfigs()
+  loadTokensStats()
 })
 </script>
 
@@ -738,6 +896,140 @@ onMounted(() => {
   display: block;
 }
 
+/* Tokens统计相关样式 */
+.tokens-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 182, 193, 0.2);
+  border-radius: 12px;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card:hover {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 182, 193, 0.4);
+  box-shadow: 0 2px 8px rgba(255, 182, 193, 0.15);
+  transform: translateY(-2px);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #8B6F7E;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #D9779F;
+  background: linear-gradient(135deg, #D9779F 0%, #C97A9A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.tokens-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.tokens-chart {
+  margin-top: 1rem;
+}
+
+.chart-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #8B6F7E;
+  margin-bottom: 1rem;
+}
+
+.chart-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  height: 200px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 182, 193, 0.2);
+  overflow-x: auto;
+}
+
+.chart-bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 30px;
+  height: 100%;
+  gap: 0.5rem;
+}
+
+.chart-bar-container {
+  width: 100%;
+  height: calc(100% - 30px);
+  display: flex;
+  align-items: flex-end;
+  position: relative;
+}
+
+.chart-bar {
+  width: 100%;
+  min-height: 5px;
+  border-radius: 4px 4px 0 0;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.chart-bar:hover {
+  opacity: 0.8;
+  transform: scaleY(1.05);
+}
+
+.chart-label {
+  font-size: 0.75rem;
+  color: #A68A8A;
+  text-align: center;
+  white-space: nowrap;
+  transform: rotate(-45deg);
+  transform-origin: center;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.no-tokens-data {
+  padding: 2rem;
+  text-align: center;
+  color: #A68A8A;
+  font-size: 0.95rem;
+}
+
+.tokens-error {
+  padding: 2rem;
+  text-align: center;
+  color: #D9779F;
+  font-size: 0.95rem;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .settings-container {
@@ -763,6 +1055,18 @@ onMounted(() => {
 
   .action-button {
     flex: 1;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chart-container {
+    height: 150px;
+  }
+
+  .chart-label {
+    font-size: 0.65rem;
   }
 }
 </style>

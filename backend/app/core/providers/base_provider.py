@@ -42,9 +42,23 @@ class JsonChatLLMProvider(LLMProvider):
         chat_messages = self._format_messages(system_prompt, messages)
 
         try:
-            result_text = self._perform_chat_completion(chat_messages, mode="simple")
+            result = self._perform_chat_completion(chat_messages, mode="simple")
+            # result可以是字符串（旧格式）或字典（新格式，包含text和usage）
+            if isinstance(result, dict):
+                result_text = result.get("text", "")
+                usage_info = result.get("usage", {})
+            else:
+                result_text = result
+                usage_info = {}
+            
             result_dict = self._parse_json_payload(result_text)
-            return self._build_simple_result(result_dict)
+            llm_result = self._build_simple_result(result_dict)
+            # 设置tokens信息
+            if usage_info:
+                llm_result.prompt_tokens = usage_info.get("prompt_tokens")
+                llm_result.completion_tokens = usage_info.get("completion_tokens")
+                llm_result.total_tokens = usage_info.get("total_tokens")
+            return llm_result
         except Exception:
             self.logger.exception("[LLM Provider] generate_reply failed, returning safe response")
             return LLMResult(
@@ -67,9 +81,23 @@ class JsonChatLLMProvider(LLMProvider):
         chat_messages = self._format_messages(system_prompt, messages)
 
         try:
-            result_text = self._perform_chat_completion(chat_messages, mode="structured")
+            result = self._perform_chat_completion(chat_messages, mode="structured")
+            # result可以是字符串（旧格式）或字典（新格式，包含text和usage）
+            if isinstance(result, dict):
+                result_text = result.get("text", "")
+                usage_info = result.get("usage", {})
+            else:
+                result_text = result
+                usage_info = {}
+            
             result_dict = self._parse_json_payload(result_text)
-            return self._build_structured_result(result_dict, parsed)
+            llm_result = self._build_structured_result(result_dict, parsed)
+            # 设置tokens信息
+            if usage_info:
+                llm_result.prompt_tokens = usage_info.get("prompt_tokens")
+                llm_result.completion_tokens = usage_info.get("completion_tokens")
+                llm_result.total_tokens = usage_info.get("total_tokens")
+            return llm_result
         except Exception:
             self.logger.exception("[LLM Provider] generate_structured_reply failed, returning safe response")
             # 规范化风险级别：parsed.riskLevel 可能是 "low", "medium", "high"
@@ -83,8 +111,14 @@ class JsonChatLLMProvider(LLMProvider):
             )
 
     @abstractmethod
-    def _perform_chat_completion(self, chat_messages: List[Dict[str, str]], mode: str) -> str:
-        """Subclasses must implement the actual API call and return raw JSON string."""
+    def _perform_chat_completion(self, chat_messages: List[Dict[str, str]], mode: str) -> str | dict:
+        """
+        Subclasses must implement the actual API call and return raw JSON string or dict.
+        
+        Returns:
+            str: Raw JSON string (legacy format)
+            dict: {"text": str, "usage": {"prompt_tokens": int, "completion_tokens": int, "total_tokens": int}} (new format)
+        """
 
     def _format_messages(self, system_prompt: str, messages: List[ChatMessage]) -> List[Dict[str, str]]:
         formatted = [{"role": "system", "content": system_prompt}]
@@ -122,6 +156,9 @@ class JsonChatLLMProvider(LLMProvider):
             topics=result_dict.get("topics", []),
             risk_level=normalize_risk_level(result_dict.get("risk_level", "normal")),
             card_data=card_data,
+            prompt_tokens=None,  # 由子类在_perform_chat_completion中设置
+            completion_tokens=None,
+            total_tokens=None,
         )
 
     def _build_structured_result(self, result_dict: Dict[str, Any], parsed: ParsedState) -> LLMResult:
@@ -220,6 +257,9 @@ class JsonChatLLMProvider(LLMProvider):
             topics=result_dict.get("topics", [parsed.scene]),
             risk_level=normalized_risk,
             card_data=card_data,
+            prompt_tokens=None,  # 由子类在_perform_chat_completion中设置
+            completion_tokens=None,
+            total_tokens=None,
         )
 
     def _normalize_intensity(self, raw_value: Any, fallback: int) -> int:

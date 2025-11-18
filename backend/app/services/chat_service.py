@@ -180,7 +180,10 @@ class ChatService:
             emotion=llm_result.emotion,
             intensity=llm_result.intensity,
             topics=llm_result.topics,
-            card_data=llm_result.card_data
+            card_data=llm_result.card_data,
+            prompt_tokens=llm_result.prompt_tokens,
+            completion_tokens=llm_result.completion_tokens,
+            total_tokens=llm_result.total_tokens
         )
         self.db.add(assistant_message)
         

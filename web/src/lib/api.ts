@@ -94,6 +94,19 @@ export interface EmotionStatsOverview {
   top_topics: Array<{ topic: string; count: number }>
 }
 
+export interface TokensUsageStats {
+  total_prompt_tokens: number
+  total_completion_tokens: number
+  total_tokens: number
+  daily_usage: Array<{
+    date: string
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+  }>
+  message_count: number
+}
+
 export interface SessionItem {
   id: string
   title: string | null
@@ -171,6 +184,18 @@ export async function getStatsOverview(
 ): Promise<ApiResponse<EmotionStatsOverview>> {
   const response = await api.get<ApiResponse<EmotionStatsOverview>>(
     '/stats/overview',
+    {
+      params: { days },
+    }
+  )
+  return response.data
+}
+
+export async function getTokensStats(
+  days: number = 30
+): Promise<ApiResponse<TokensUsageStats>> {
+  const response = await api.get<ApiResponse<TokensUsageStats>>(
+    '/stats/tokens',
     {
       params: { days },
     }

@@ -17,6 +17,10 @@ class LLMResult(BaseModel):
     risk_level: Literal["low", "medium", "high"]  # 三级风险：low/medium/high（兼容旧版：low和medium对应normal）
     # 结构化卡片数据（可选，用于卡片展示）
     card_data: Optional[dict] = None  # 包含 theme, emotion_echo, clarification, suggestion
+    # Tokens使用统计（可选）
+    prompt_tokens: Optional[int] = None  # 输入tokens数
+    completion_tokens: Optional[int] = None  # 输出tokens数
+    total_tokens: Optional[int] = None  # 总tokens数
 
 
 class LLMProvider(ABC):

@@ -8,7 +8,7 @@ from datetime import date, datetime, timedelta
 from collections import Counter, defaultdict
 from app.db import get_db
 from app.models import Message, DailySummary
-from app.schemas.stats import EmotionStatsOverview
+from app.schemas.stats import EmotionStatsOverview, TokensUsageStats
 from app.schemas.common import ApiResponse, ErrorDetail
 
 router = APIRouter()
@@ -103,5 +103,83 @@ async def get_stats_overview(
         error_detail = ErrorDetail(
             code="STATS_ERROR",
             message=f"获取统计信息时发生错误: {str(e)}"
+        )
+        return ApiResponse(data=None, error=error_detail)
+
+
+@router.get("/stats/tokens", response_model=ApiResponse[TokensUsageStats])
+async def get_tokens_stats(
+    days: int = Query(default=30, ge=1, le=365, description="统计天数"),
+    db: Session = Depends(get_db)
+):
+    """
+    获取Tokens使用统计
+    """
+    try:
+        # 计算日期范围
+        end_date = date.today()
+        start_date = end_date - timedelta(days=days - 1)
+        
+        # 查询范围内的助手消息（只有助手消息有tokens统计）
+        messages = db.query(Message).filter(
+            func.date(Message.created_at) >= start_date,
+            func.date(Message.created_at) <= end_date,
+            Message.role == "assistant",
+            Message.total_tokens.isnot(None)
+        ).all()
+        
+        # 计算总计
+        total_prompt_tokens = sum(msg.prompt_tokens or 0 for msg in messages)
+        total_completion_tokens = sum(msg.completion_tokens or 0 for msg in messages)
+        total_tokens = sum(msg.total_tokens or 0 for msg in messages)
+        
+        # 按日期分组统计
+        daily_usage_dict = defaultdict(lambda: {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0
+        })
+        
+        for msg in messages:
+            msg_date = msg.created_at.date()
+            daily_usage_dict[msg_date]["prompt_tokens"] += msg.prompt_tokens or 0
+            daily_usage_dict[msg_date]["completion_tokens"] += msg.completion_tokens or 0
+            daily_usage_dict[msg_date]["total_tokens"] += msg.total_tokens or 0
+        
+        # 生成每日使用数据（包含所有日期，即使没有消息）
+        daily_usage = []
+        current_date = start_date
+        while current_date <= end_date:
+            if current_date in daily_usage_dict:
+                daily_usage.append({
+                    "date": current_date.isoformat(),
+                    "prompt_tokens": daily_usage_dict[current_date]["prompt_tokens"],
+                    "completion_tokens": daily_usage_dict[current_date]["completion_tokens"],
+                    "total_tokens": daily_usage_dict[current_date]["total_tokens"]
+                })
+            else:
+                daily_usage.append({
+                    "date": current_date.isoformat(),
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0
+                })
+            current_date += timedelta(days=1)
+        
+        return ApiResponse(
+            data=TokensUsageStats(
+                total_prompt_tokens=total_prompt_tokens,
+                total_completion_tokens=total_completion_tokens,
+                total_tokens=total_tokens,
+                daily_usage=daily_usage,
+                message_count=len(messages)
+            ),
+            error=None
+        )
+    
+    except Exception as e:
+        error_detail = ErrorDetail(
+            code="TOKENS_STATS_ERROR",
+            message=f"获取Tokens统计信息时发生错误: {str(e)}"
         )
         return ApiResponse(data=None, error=error_detail)

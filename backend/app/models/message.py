@@ -17,5 +17,8 @@ class Message(Base):
     intensity = Column(Integer, nullable=True)  # 情绪强度 1-5
     topics = Column(JSON, nullable=True)  # 主题列表
     card_data = Column(JSON, nullable=True)  # 卡片数据（主题、情感回音、认知澄清、建议）
+    prompt_tokens = Column(Integer, nullable=True)  # 输入tokens数
+    completion_tokens = Column(Integer, nullable=True)  # 输出tokens数
+    total_tokens = Column(Integer, nullable=True)  # 总tokens数
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

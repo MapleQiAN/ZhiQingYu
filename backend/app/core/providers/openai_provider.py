@@ -21,7 +21,7 @@ class OpenAIProvider(JsonChatLLMProvider):
 
         self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
 
-    def _perform_chat_completion(self, chat_messages, mode: str) -> str:
+    def _perform_chat_completion(self, chat_messages, mode: str) -> str | dict:
         response = self.client.chat.completions.create(
             model=self.model,
             messages=chat_messages,
@@ -32,4 +32,16 @@ class OpenAIProvider(JsonChatLLMProvider):
 
         result_text = response.choices[0].message.content
         self.logger.info(f"[OpenAI Provider] API响应: {result_text}")
+        
+        # 提取tokens使用信息
+        usage = response.usage
+        if usage:
+            return {
+                "text": result_text,
+                "usage": {
+                    "prompt_tokens": usage.prompt_tokens,
+                    "completion_tokens": usage.completion_tokens,
+                    "total_tokens": usage.total_tokens,
+                }
+            }
         return result_text

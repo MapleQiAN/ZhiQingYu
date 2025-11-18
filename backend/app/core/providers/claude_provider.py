@@ -20,7 +20,7 @@ class ClaudeProvider(JsonChatLLMProvider):
         if not self.api_key:
             raise ValueError("API key is required for Claude provider")
 
-    def _perform_chat_completion(self, chat_messages: List[Dict[str, str]], mode: str) -> str:
+    def _perform_chat_completion(self, chat_messages: List[Dict[str, str]], mode: str) -> str | dict:
         """调用Claude API"""
         # Claude API使用messages格式，需要分离system message
         messages = []
@@ -63,6 +63,18 @@ class ClaudeProvider(JsonChatLLMProvider):
             if "content" in result_data and len(result_data["content"]) > 0:
                 result_text = result_data["content"][0]["text"]
                 self.logger.info(f"[Claude Provider] API响应: {result_text}")
+                
+                # 提取tokens使用信息
+                usage = result_data.get("usage", {})
+                if usage:
+                    return {
+                        "text": result_text,
+                        "usage": {
+                            "prompt_tokens": usage.get("input_tokens", 0),
+                            "completion_tokens": usage.get("output_tokens", 0),
+                            "total_tokens": usage.get("input_tokens", 0) + usage.get("output_tokens", 0),
+                        }
+                    }
                 return result_text
             
             raise ValueError(f"Unexpected Claude API response format: {result_data}")

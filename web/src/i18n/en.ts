@@ -177,6 +177,18 @@ export default {
     minimaxDefaultUrl: 'https://api.minimax.chat/v1',
     doubaoDefaultUrl: 'https://ark.cn-beijing.volces.com/api/v3',
     ollamaNoApiKey: 'Ollama does not require an API key',
+    tokensUsage: 'API Usage Statistics',
+    tokensUsageDesc: 'View API tokens usage',
+    totalTokens: 'Total Tokens',
+    promptTokens: 'Prompt Tokens',
+    completionTokens: 'Completion Tokens',
+    messageCount: 'Message Count',
+    dailyUsage: 'Daily Usage',
+    lastDays: 'Last {days} Days',
+    tokens: 'Tokens',
+    noTokensData: 'No tokens usage data',
+    loadingTokens: 'Loading tokens statistics...',
+    tokensStatsError: 'Failed to get tokens statistics',
   },
 }
 
