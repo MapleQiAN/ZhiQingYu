@@ -23,6 +23,13 @@ export interface CardData {
   emotion_echo?: string
   clarification?: string
   suggestion?: string[] | string
+  // 5步骤相关字段（可选）
+  step1_emotion_mirror?: string  // Step 1: 情绪镜像
+  step1_problem_restate?: string  // Step 1: 问题复述
+  step2_breakdown?: string  // Step 2: 问题拆解
+  step3_explanation?: string  // Step 3: 专业解释
+  step4_suggestions?: string[] | string  // Step 4: 行动建议
+  step5_summary?: string  // Step 5: 收尾小结
 }
 
 export interface ChatMessage {
@@ -34,6 +41,7 @@ export interface ChatMessage {
 export interface ChatRequest {
   session_id?: string | null
   messages: ChatMessage[]
+  experience_mode?: 'A' | 'B' | 'C' | 'D' | null  // 体验模式：A:只想被听 B:想搞懂 C:想要建议 D:系统深聊
 }
 
 export interface ChatResponse {
@@ -42,7 +50,7 @@ export interface ChatResponse {
   emotion: string
   intensity: number
   topics: string[]
-  risk_level: 'normal' | 'high'
+  risk_level: 'normal' | 'high'  // 后端返回的是normal/high，但内部可能是low/medium/high
   card_data?: CardData | null
 }
 

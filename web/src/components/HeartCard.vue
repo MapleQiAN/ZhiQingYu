@@ -9,8 +9,70 @@
 
     <!-- 卡片内容区域 -->
     <div class="card-content">
-      <!-- 情感回音板块 -->
-      <div v-if="cardData.emotion_echo" class="card-section emotion-section">
+      <!-- 5步骤内容展示（优先） -->
+      <!-- Step 1: 情绪接住 & 问题确认 -->
+      <div v-if="cardData.step1_emotion_mirror || cardData.step1_problem_restate" class="card-section step-section step1-section">
+        <div class="section-header">
+          <span class="section-icon">💭</span>
+          <span class="section-title">{{ $t('chat.step1') }}</span>
+        </div>
+        <div class="section-content">
+          <div v-if="cardData.step1_emotion_mirror" class="step-content-item">
+            <div class="step-label">{{ $t('chat.emotionMirror') }}</div>
+            <div class="step-text">{{ cardData.step1_emotion_mirror }}</div>
+          </div>
+          <div v-if="cardData.step1_problem_restate" class="step-content-item">
+            <div class="step-label">{{ $t('chat.problemRestate') }}</div>
+            <div class="step-text">{{ cardData.step1_problem_restate }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: 结构化拆解问题 -->
+      <div v-if="cardData.step2_breakdown" class="card-section step-section step2-section">
+        <div class="section-header">
+          <span class="section-icon">🔍</span>
+          <span class="section-title">{{ $t('chat.step2') }}</span>
+        </div>
+        <div class="section-content">{{ cardData.step2_breakdown }}</div>
+      </div>
+
+      <!-- Step 3: 专业视角解释 -->
+      <div v-if="cardData.step3_explanation" class="card-section step-section step3-section">
+        <div class="section-header">
+          <span class="section-icon">💡</span>
+          <span class="section-title">{{ $t('chat.step3') }}</span>
+        </div>
+        <div class="section-content">{{ cardData.step3_explanation }}</div>
+      </div>
+
+      <!-- Step 4: 小步可执行建议 -->
+      <div v-if="hasStep4Suggestions" class="card-section step-section step4-section">
+        <div class="section-header">
+          <span class="section-icon">✨</span>
+          <span class="section-title">{{ $t('chat.step4') }}</span>
+        </div>
+        <div class="section-content">
+          <ul v-if="Array.isArray(cardData.step4_suggestions)" class="suggestion-list">
+            <li v-for="(item, index) in cardData.step4_suggestions" :key="index" class="suggestion-item">
+              {{ item }}
+            </li>
+          </ul>
+          <div v-else class="suggestion-text">{{ cardData.step4_suggestions }}</div>
+        </div>
+      </div>
+
+      <!-- Step 5: 温柔收尾 & 小结 -->
+      <div v-if="cardData.step5_summary" class="card-section step-section step5-section">
+        <div class="section-header">
+          <span class="section-icon">🌺</span>
+          <span class="section-title">{{ $t('chat.step5') }}</span>
+        </div>
+        <div class="section-content">{{ cardData.step5_summary }}</div>
+      </div>
+
+      <!-- 兼容旧版格式：情感回音板块 -->
+      <div v-if="!hasStepContent && cardData.emotion_echo" class="card-section emotion-section">
         <div class="section-header">
           <span class="section-icon">💭</span>
           <span class="section-title">{{ $t('chat.emotionEcho') }}</span>
@@ -18,8 +80,8 @@
         <div class="section-content">{{ cardData.emotion_echo }}</div>
       </div>
 
-      <!-- 认知澄清板块 -->
-      <div v-if="cardData.clarification" class="card-section clarification-section">
+      <!-- 兼容旧版格式：认知澄清板块 -->
+      <div v-if="!hasStepContent && cardData.clarification" class="card-section clarification-section">
         <div class="section-header">
           <span class="section-icon">🔍</span>
           <span class="section-title">{{ $t('chat.clarification') }}</span>
@@ -27,8 +89,8 @@
         <div class="section-content">{{ cardData.clarification }}</div>
       </div>
 
-      <!-- 建议板块 -->
-      <div v-if="hasSuggestions" class="card-section suggestion-section">
+      <!-- 兼容旧版格式：建议板块 -->
+      <div v-if="!hasStepContent && hasSuggestions" class="card-section suggestion-section">
         <div class="section-header">
           <span class="section-icon">✨</span>
           <span class="section-title">{{ $t('chat.suggestion') }}</span>
@@ -62,6 +124,25 @@ const hasSuggestions = computed(() => {
     return props.cardData.suggestion.length > 0
   }
   return props.cardData.suggestion.trim().length > 0
+})
+
+const hasStep4Suggestions = computed(() => {
+  if (!props.cardData.step4_suggestions) return false
+  if (Array.isArray(props.cardData.step4_suggestions)) {
+    return props.cardData.step4_suggestions.length > 0
+  }
+  return props.cardData.step4_suggestions.trim().length > 0
+})
+
+const hasStepContent = computed(() => {
+  return !!(
+    props.cardData.step1_emotion_mirror ||
+    props.cardData.step1_problem_restate ||
+    props.cardData.step2_breakdown ||
+    props.cardData.step3_explanation ||
+    props.cardData.step4_suggestions ||
+    props.cardData.step5_summary
+  )
 })
 </script>
 
@@ -230,6 +311,53 @@ const hasSuggestions = computed(() => {
 
 .suggestion-text {
   line-height: 1.8;
+}
+
+.step-section {
+  position: relative;
+}
+
+.step1-section {
+  border-left: 3px solid rgba(255, 182, 193, 0.6);
+}
+
+.step2-section {
+  border-left: 3px solid rgba(176, 196, 222, 0.6);
+}
+
+.step3-section {
+  border-left: 3px solid rgba(255, 218, 185, 0.6);
+}
+
+.step4-section {
+  border-left: 3px solid rgba(144, 238, 144, 0.6);
+}
+
+.step5-section {
+  border-left: 3px solid rgba(221, 160, 221, 0.6);
+}
+
+.step-content-item {
+  margin-bottom: var(--spacing-md);
+}
+
+.step-content-item:last-child {
+  margin-bottom: 0;
+}
+
+.step-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-dark);
+  margin-bottom: var(--spacing-xs);
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.step-text {
+  line-height: 1.8;
+  color: var(--text-primary);
 }
 </style>
 

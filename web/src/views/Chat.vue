@@ -128,6 +128,34 @@
 
     <!-- 输入区域 -->
     <n-card class="input-card">
+      <!-- 体验模式选择器 -->
+      <div v-if="messages.length === 0" class="experience-mode-selector">
+        <div class="mode-label">{{ $t('chat.experienceMode') }}</div>
+        <div class="mode-buttons">
+          <n-button
+            v-for="mode in experienceModes"
+            :key="mode.value"
+            :type="selectedExperienceMode === mode.value ? 'primary' : 'default'"
+            :ghost="selectedExperienceMode !== mode.value"
+            size="small"
+            @click="selectedExperienceMode = mode.value"
+            class="mode-button"
+          >
+            <template #icon>
+              <span>{{ mode.icon }}</span>
+            </template>
+            {{ mode.label }}
+          </n-button>
+        </div>
+      </div>
+      
+      <!-- 风险级别警告 -->
+      <div v-if="lastRiskLevel === 'high'" class="risk-warning">
+        <n-alert type="warning" :title="$t('chat.riskWarning')" :show-icon="true">
+          {{ $t('chat.riskWarningDesc') }}
+        </n-alert>
+      </div>
+      
       <div class="input-wrapper">
         <n-input
           v-model:value="input"
@@ -160,9 +188,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NCard, NInput, NButton, useMessage } from 'naive-ui'
+import { NCard, NInput, NButton, NAlert, useMessage } from 'naive-ui'
 import {
   sendChatMessage,
   getSessions,
@@ -185,6 +213,16 @@ const messagesEndRef = ref<HTMLDivElement | null>(null)
 const sidebarCollapsed = ref(false)
 const sessions = ref<SessionItem[]>([])
 const loadingSessions = ref(false)
+const selectedExperienceMode = ref<'A' | 'B' | 'C' | 'D' | null>(null)
+const lastRiskLevel = ref<'normal' | 'high'>('normal')
+
+// 体验模式选项（使用computed确保国际化文本正确更新）
+const experienceModes = computed(() => [
+  { value: 'A' as const, label: t('chat.modeA'), icon: '👂' },
+  { value: 'B' as const, label: t('chat.modeB'), icon: '💡' },
+  { value: 'C' as const, label: t('chat.modeC'), icon: '💪' },
+  { value: 'D' as const, label: t('chat.modeD'), icon: '🌊' },
+])
 
 const scrollToBottom = async () => {
   await nextTick()
@@ -230,6 +268,8 @@ const handleSwitchSession = async (id: string) => {
       sessionId.value = id
       messages.value = response.data.messages
       todayEmotion.value = null // 重置情绪，因为不同会话的情绪可能不同
+      lastRiskLevel.value = 'normal' // 重置风险级别
+      selectedExperienceMode.value = null // 重置体验模式
       scrollToBottom()
     }
   } catch (error) {
@@ -246,6 +286,8 @@ const handleNewChat = () => {
   messages.value = []
   todayEmotion.value = null
   input.value = ''
+  selectedExperienceMode.value = null
+  lastRiskLevel.value = 'normal'
 }
 
 // 格式化会话时间
@@ -276,6 +318,18 @@ const formatSessionTime = (timeStr: string | null) => {
 // 检查卡片数据是否有效
 const hasCardData = (cardData: CardData | null | undefined): boolean => {
   if (!cardData) return false
+  // 检查5步骤内容
+  if (
+    cardData.step1_emotion_mirror ||
+    cardData.step1_problem_restate ||
+    cardData.step2_breakdown ||
+    cardData.step3_explanation ||
+    cardData.step4_suggestions ||
+    cardData.step5_summary
+  ) {
+    return true
+  }
+  // 检查旧版格式
   return !!(
     cardData.theme ||
     cardData.emotion_echo ||
@@ -300,6 +354,7 @@ const handleSend = async () => {
 
   const newMessages = [...messages.value, userMessage]
   messages.value = newMessages
+  const currentInput = input.value.trim()
   input.value = ''
   loading.value = true
 
@@ -307,11 +362,14 @@ const handleSend = async () => {
     const response = await sendChatMessage({
       session_id: sessionId.value,
       messages: newMessages,
+      experience_mode: selectedExperienceMode.value,
     })
 
     if (response.error) {
       console.error('API Error:', response.error)
       message.error(`${t('common.error')}: ${response.error.message}`)
+      // 恢复输入
+      input.value = currentInput
       return
     }
 
@@ -319,6 +377,7 @@ const handleSend = async () => {
       const data = response.data
       sessionId.value = data.session_id
       todayEmotion.value = data.emotion
+      lastRiskLevel.value = data.risk_level
 
       const assistantMessage: ChatMessage = {
         role: 'assistant',
@@ -330,10 +389,17 @@ const handleSend = async () => {
       scrollToBottom()
       // 刷新会话列表
       loadSessions()
+      
+      // 如果检测到高风险，显示额外提示
+      if (data.risk_level === 'high') {
+        message.warning(t('chat.highRiskDetected'))
+      }
     }
   } catch (error) {
     console.error('Request failed:', error)
     message.error(t('chat.sendFailed'))
+    // 恢复输入
+    input.value = currentInput
   } finally {
     loading.value = false
   }
@@ -974,6 +1040,55 @@ const getEmotionLabel = (emotion: string | null) => {
 .input-card :deep(.n-card__content) {
   outline: none !important;
   padding: var(--spacing-md) !important;
+}
+
+.experience-mode-selector {
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: var(--border-width-thin) solid var(--border-color-light);
+}
+
+.mode-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mode-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.mode-button {
+  flex: 1;
+  min-width: 100px;
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-base);
+}
+
+.mode-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-warm-sm);
+}
+
+.risk-warning {
+  margin-bottom: var(--spacing-md);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .input-card:hover {
