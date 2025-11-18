@@ -180,6 +180,58 @@ img[loading] {
   box-shadow: var(--shadow-md);
 }
 
+/* ========== 全局优化弹窗和按钮圆角 - 更圆润 ========== */
+
+/* 弹窗（Dialog/Modal）圆角优化 - 覆盖所有可能的类名 */
+.n-modal,
+.n-modal .n-card,
+.n-modal__content,
+.n-modal__content-wrapper,
+.n-dialog,
+.n-dialog .n-card,
+[class*="n-modal"],
+[class*="n-dialog"] {
+  border-radius: var(--radius-2xl) !important;
+}
+
+.n-modal .n-card-body,
+.n-dialog .n-card-body,
+.n-modal .n-card__content,
+.n-dialog .n-card__content {
+  border-radius: var(--radius-2xl) !important;
+}
+
+/* 按钮（Button）圆角优化 - 覆盖所有按钮相关元素 */
+.n-button,
+.n-button__border,
+.n-button__state-border,
+.n-button .n-button__border,
+button.n-button,
+[class*="n-button"]:not([class*="__icon"]):not([class*="__loading"]) {
+  border-radius: var(--radius-lg) !important;
+}
+
+/* 小尺寸按钮使用中等圆角 */
+.n-button--tiny,
+.n-button--tiny .n-button__border,
+.n-button--small,
+.n-button--small .n-button__border {
+  border-radius: var(--radius-md) !important;
+}
+
+/* 大尺寸按钮使用更大圆角 */
+.n-button--large,
+.n-button--large .n-button__border,
+.n-button--huge,
+.n-button--huge .n-button__border {
+  border-radius: var(--radius-xl) !important;
+}
+
+/* 确保按钮内部元素也继承圆角 */
+.n-button > * {
+  border-radius: inherit;
+}
+
 /* 优化加载动画 - 使用设计系统变量 */
 @keyframes shimmer {
   0% {
