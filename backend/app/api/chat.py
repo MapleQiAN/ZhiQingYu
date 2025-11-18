@@ -36,7 +36,9 @@ async def chat(
         result = chat_service.process_chat(
             request.session_id, 
             request.messages,
-            experience_mode=request.experience_mode
+            experience_mode=request.experience_mode,
+            ai_style=request.ai_style,
+            chat_mode=request.chat_mode
         )
         
         # 构建响应

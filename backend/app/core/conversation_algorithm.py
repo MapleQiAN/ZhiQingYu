@@ -345,6 +345,7 @@ def generate_reply_with_algorithm(
     messages: list[ChatMessage],
     user_profile: UserProfile,
     conversation_state: ConversationState | None = None,
+    chat_mode: str | None = None,
 ) -> tuple[LLMResult, ConversationState]:
     """
     使用对话算法生成回复（增强版：支持5步骤系统）
@@ -391,12 +392,28 @@ def generate_reply_with_algorithm(
     
     # 5. 根据当前体验模式与对话进度，确定本轮要执行的步骤集合
     step_controller = StepController()
-    mode, steps_to_execute, experience_mode = step_controller.determine_mode_and_steps(
-        parsed=parsed,
-        user_profile=user_profile,
-        conversation_state=conversation_state,
-        user_input=user_message.content
-    )
+    # 如果前端明确指定了chat_mode，优先使用；否则通过step_controller自动判断
+    if chat_mode:
+        mode = chat_mode
+        # 深聊模式下，一次性执行所有5个步骤
+        if chat_mode == "deep":
+            steps_to_execute = [1, 2, 3, 4, 5]
+        else:
+            # 快速模式：根据体验模式决定步骤
+            _, steps_to_execute, experience_mode = step_controller.determine_mode_and_steps(
+                parsed=parsed,
+                user_profile=user_profile,
+                conversation_state=conversation_state,
+                user_input=user_message.content
+            )
+            mode = "quick"
+    else:
+        mode, steps_to_execute, experience_mode = step_controller.determine_mode_and_steps(
+            parsed=parsed,
+            user_profile=user_profile,
+            conversation_state=conversation_state,
+            user_input=user_message.content
+        )
     
     # 6. 选择干预模块
     interventions = select_interventions(parsed, style)
@@ -412,13 +429,24 @@ def generate_reply_with_algorithm(
     )
     
     # 8. 调用LLM生成回复
-    llm_result = llm_provider.generate_structured_reply(
-        messages=messages,
-        parsed=parsed,
-        style=style,
-        plan=plan,
-        interventions=interventions
-    )
+    # 深聊模式下，分别调用5次AI请求，每个步骤一次
+    if mode == "deep" and len(steps_to_execute) == 5:
+        llm_result = llm_provider.generate_deep_chat_reply(
+            messages=messages,
+            parsed=parsed,
+            style=style,
+            plan=plan,
+            interventions=interventions
+        )
+    else:
+        # 快速模式或非完整5步骤：使用原来的方法
+        llm_result = llm_provider.generate_structured_reply(
+            messages=messages,
+            parsed=parsed,
+            style=style,
+            plan=plan,
+            interventions=interventions
+        )
     
     # 9. 更新对话状态
     updated_state = step_controller.update_conversation_state(

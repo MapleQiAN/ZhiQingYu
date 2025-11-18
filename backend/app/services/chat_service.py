@@ -25,7 +25,7 @@ class ChatService:
         self.db = db
         self.llm_provider = llm_provider
     
-    def process_chat(self, session_id: str | None, messages: list[ChatMessage], experience_mode: str | None = None) -> dict:
+    def process_chat(self, session_id: str | None, messages: list[ChatMessage], experience_mode: str | None = None, ai_style: str | None = None, chat_mode: str | None = None) -> dict:
         """
         处理聊天请求
         
@@ -65,26 +65,7 @@ class ChatService:
             self.db.add(db_message)
             self.db.commit()
         
-        # 3. 检测用户是否请求切换风格
-        style_detector = StyleOverrideDetector()
-        detected_style = None
-        if user_message and user_message.role == "user":
-            detected_style = style_detector.detect(user_message.content)
-        
-        # 4. 获取用户配置（简化版，实际应该从数据库读取）
-        # 如果前端提供了experience_mode，优先使用；否则使用用户偏好或对话状态中的
-        preferred_experience_mode = experience_mode
-        if not preferred_experience_mode and conversation_state:
-            preferred_experience_mode = conversation_state.experienceMode
-        
-        user_profile = UserProfile(
-            id=session_id,  # 临时使用session_id作为user_id
-            preferredStyleId=None,  # TODO: 从数据库读取
-            recentStyleOverrideId=detected_style,  # 使用检测到的风格覆盖
-            preferredExperienceMode=preferred_experience_mode  # 使用前端提供的体验模式
-        )
-        
-        # 5. 恢复对话状态（从session或创建新的）
+        # 3. 恢复对话状态（从session或创建新的）- 需要先恢复，因为后面会用到
         conversation_state = None
         if session and hasattr(session, 'conversation_state') and session.conversation_state:
             try:
@@ -95,13 +76,36 @@ class ChatService:
                 logger.warning(f"恢复对话状态失败: {e}，将创建新状态")
                 conversation_state = None
         
+        # 4. 检测用户是否请求切换风格
+        style_detector = StyleOverrideDetector()
+        detected_style = None
+        if user_message and user_message.role == "user":
+            detected_style = style_detector.detect(user_message.content)
+        
+        # 5. 获取用户配置（简化版，实际应该从数据库读取）
+        # 如果前端提供了experience_mode，优先使用；否则使用用户偏好或对话状态中的
+        preferred_experience_mode = experience_mode
+        if not preferred_experience_mode and conversation_state:
+            preferred_experience_mode = conversation_state.experienceMode
+        
+        # 如果前端提供了ai_style，优先使用；否则使用检测到的风格覆盖
+        preferred_style_id = ai_style if ai_style else detected_style
+        
+        user_profile = UserProfile(
+            id=session_id,  # 临时使用session_id作为user_id
+            preferredStyleId=preferred_style_id,  # 使用前端提供的AI风格，或检测到的风格覆盖
+            recentStyleOverrideId=detected_style,  # 使用检测到的风格覆盖
+            preferredExperienceMode=preferred_experience_mode  # 使用前端提供的体验模式
+        )
+        
         # 6. 使用对话算法生成回复（增强版：支持5步骤系统）
         try:
             llm_result, updated_conversation_state = generate_reply_with_algorithm(
                 self.llm_provider,
                 messages,
                 user_profile,
-                conversation_state=conversation_state
+                conversation_state=conversation_state,
+                chat_mode=chat_mode
             )
             
             # 保存对话状态到session（如果session支持）

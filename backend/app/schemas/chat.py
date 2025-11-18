@@ -18,6 +18,8 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = None
     messages: list[ChatMessage]
     experience_mode: Optional[Literal["A", "B", "C", "D"]] = None  # 体验模式：A:只想被听 B:想搞懂 C:想要建议 D:系统深聊
+    ai_style: Optional[str] = None  # AI风格：comfort, analyst, coach, mentor, friend, listener, growth, crisis_safe
+    chat_mode: Optional[Literal["deep", "quick"]] = None  # 聊天模式：deep(深聊模式) 或 quick(快速模式)
 
 
 class ChatResponse(BaseModel):
