@@ -392,6 +392,11 @@ def generate_reply_with_algorithm(
     
     # 5. 根据当前体验模式与对话进度，确定本轮要执行的步骤集合
     step_controller = StepController()
+    experience_mode = None
+    if getattr(user_profile, "preferredExperienceMode", None):
+        experience_mode = user_profile.preferredExperienceMode
+    if conversation_state and getattr(conversation_state, "experienceMode", None):
+        experience_mode = conversation_state.experienceMode
     # 如果前端明确指定了chat_mode，优先使用；否则通过step_controller自动判断
     if chat_mode:
         mode = chat_mode

@@ -261,13 +261,63 @@ class JsonChatLLMProvider(LLMProvider):
 
     def _parse_json_payload(self, payload: str) -> Dict[str, Any]:
         text = payload.strip()
+        # 处理常见的LLM输出包装，例如 ```json``` 或 ``` 块
         if "```json" in text:
             text = text.split("```json", 1)[1]
             text = text.split("```", 1)[0]
         elif text.startswith("```") and "```" in text[3:]:
             text = text.split("```", 1)[1]
             text = text.split("```", 1)[0]
-        return json.loads(text.strip())
+        
+        # 移除可能存在的思考标签，例如 <think>...</think>
+        for tag in ("think", "reasoning", "reflection"):
+            start_tag = f"<{tag}>"
+            end_tag = f"</{tag}>"
+            if start_tag in text and end_tag in text:
+                text = text.split(end_tag, 1)[1]
+        
+        text = text.strip()
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            extracted = self._extract_json_object(text)
+            if extracted:
+                return json.loads(extracted)
+            raise
+
+    def _extract_json_object(self, text: str) -> str | None:
+        """
+        从包含额外说明文字的文本中尝试提取第一个完整的JSON对象。
+        """
+        in_string = False
+        escape = False
+        depth = 0
+        start_index = None
+        for idx, char in enumerate(text):
+            if in_string:
+                if escape:
+                    escape = False
+                    continue
+                if char == "\\":
+                    escape = True
+                    continue
+                if char == '"':
+                    in_string = False
+                continue
+            else:
+                if char == '"':
+                    in_string = True
+                    continue
+                if char == "{":
+                    if depth == 0:
+                        start_index = idx
+                    depth += 1
+                elif char == "}":
+                    if depth > 0:
+                        depth -= 1
+                        if depth == 0 and start_index is not None:
+                            return text[start_index : idx + 1]
+        return None
 
     def _build_simple_result(self, result_dict: Dict[str, Any]) -> LLMResult:
         reply = result_dict.get("reply", "")
