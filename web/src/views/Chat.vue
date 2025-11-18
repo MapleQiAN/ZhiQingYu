@@ -42,7 +42,7 @@
             @click="handleSwitchSession(session.id)"
           >
             <div class="session-content">
-              <div class="session-preview">{{ session.preview || $t('chat.newChat') }}</div>
+              <div class="session-preview">{{ session.title || session.preview || $t('chat.newChat') }}</div>
               <div class="session-time">
                 {{ formatSessionTime(session.latest_message_at || session.created_at) }}
               </div>

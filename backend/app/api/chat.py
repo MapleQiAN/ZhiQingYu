@@ -71,16 +71,18 @@ async def get_sessions(
         
         session_items = []
         for session in sessions:
-            # 获取第一条用户消息作为预览
-            first_message = db.query(Message).filter(
-                Message.session_id == session.id,
-                Message.role == "user"
-            ).order_by(Message.created_at.asc()).first()
-            
+            # 如果已经有AI生成的标题，就不需要预览了
+            # 否则获取第一条用户消息作为预览
             preview = None
-            if first_message:
-                # 取前50个字符作为预览
-                preview = first_message.content[:50] + "..." if len(first_message.content) > 50 else first_message.content
+            if not session.title:
+                first_message = db.query(Message).filter(
+                    Message.session_id == session.id,
+                    Message.role == "user"
+                ).order_by(Message.created_at.asc()).first()
+                
+                if first_message:
+                    # 取前50个字符作为预览
+                    preview = first_message.content[:50] + "..." if len(first_message.content) > 50 else first_message.content
             
             session_items.append(SessionItem(
                 id=session.id,

@@ -192,6 +192,23 @@ class ChatService:
             llm_result.topics
         )
         
+        # 10. 根据AI总结的主题生成会话标题
+        if llm_result.topics and len(llm_result.topics) > 0:
+            # 将主题列表转换为友好的标题
+            # 如果只有一个主题，直接使用；如果有多个，用"、"连接，最多显示3个
+            topics_for_title = llm_result.topics[:3]  # 最多取前3个主题
+            title = "、".join(topics_for_title)
+            if len(llm_result.topics) > 3:
+                title += "等"
+            session.title = title
+        elif not session.title:
+            # 如果没有主题且还没有标题，使用第一条用户消息的前30个字符作为标题
+            if user_message and user_message.role == "user":
+                preview = user_message.content[:30]
+                if len(user_message.content) > 30:
+                    preview += "..."
+                session.title = preview
+        
         self.db.commit()
         
         # 映射风险级别：为了保持API兼容性，将low/medium/high映射到normal/high
