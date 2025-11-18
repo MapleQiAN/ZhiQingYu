@@ -40,37 +40,59 @@ class SafetyChecker:
         self,
         reply_text: str,
         parsed: ParsedState,
+        plan: Optional[dict] = None,
     ) -> tuple[bool, str]:
         """
-        检查回复的安全性和质量
+        检查回复的安全性和质量（增强版：支持5步骤检查）
         
         Args:
             reply_text: 回复文本
             parsed: 情绪解析结果
+            plan: 回复规划（可选，用于检查步骤必需要素）
             
         Returns:
             tuple[bool, str]: (是否通过, 错误信息)
         """
         reply_lower = reply_text.lower()
         
-        # 1. 检查是否包含危险内容
+        # 1. 检查是否包含危险内容（自伤、他伤、自杀方法等）
         for keyword in self.DANGER_KEYWORDS:
             if keyword in reply_lower:
                 return False, f"包含危险内容: {keyword}"
         
-        # 2. 检查是否包含极端表达（高风险场景更严格）
+        # 2. 检查是否包含诊断性语言（禁止做诊断）
+        diagnosis_keywords = ["抑郁症", "焦虑症", "强迫症", "双相", "精神分裂", "你有病", "你得了", "diagnosis", "disorder"]
+        for keyword in diagnosis_keywords:
+            if keyword in reply_lower:
+                return False, f"不应使用诊断性语言: {keyword}"
+        
+        # 3. 检查是否包含羞辱式话语
+        shaming_keywords = ["你太懒", "你矫情", "你太敏感", "你太脆弱", "你太自私", "你太笨"]
+        for keyword in shaming_keywords:
+            if keyword in reply_lower:
+                return False, f"不应使用羞辱式话语: {keyword}"
+        
+        # 4. 检查是否包含极端表达（高风险场景更严格）
         if parsed.riskLevel == "high":
             for keyword in self.EXTREME_KEYWORDS:
                 if keyword in reply_lower:
                     return False, f"高风险场景下不应使用极端表达: {keyword}"
         
-        # 3. 检查是否明确承认了用户情绪（简单检查）
-        emotion_keywords = ["感受", "情绪", "理解", "明白", "知道"]
+        # 5. 检查是否明确承认了用户情绪（Step 1的必需要素）
+        emotion_keywords = ["感受", "情绪", "理解", "明白", "知道", "感到", "觉得"]
         if not any(kw in reply_text for kw in emotion_keywords):
             # 这不是致命错误，只是质量提示
             pass
         
-        # 4. 检查长度（避免过长或过短）
+        # 6. 检查是否提供了自伤/自杀的具体方法（严格禁止）
+        if parsed.hasSelfHarmKeywords:
+            method_keywords = ["如何", "怎么", "方法", "步骤", "how to", "way to"]
+            if any(kw in reply_lower for kw in method_keywords):
+                # 如果同时包含自伤关键词和方法关键词，可能是危险内容
+                if any(kw in reply_lower for kw in ["自杀", "自残", "self-harm", "suicide"]):
+                    return False, "不应提供自伤/自杀的具体方法"
+        
+        # 7. 检查长度（避免过长或过短）
         if len(reply_text) < 10:
             return False, "回复过短"
         

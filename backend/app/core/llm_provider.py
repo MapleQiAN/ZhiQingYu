@@ -9,12 +9,12 @@ from app.schemas.style import StyleProfile, ParsedState, ReplyPlan, Intervention
 
 
 class LLMResult(BaseModel):
-    """LLM返回结果"""
+    """LLM返回结果（增强版：支持三级风险）"""
     reply: str
     emotion: str
     intensity: int
     topics: list[str]
-    risk_level: Literal["normal", "high"]
+    risk_level: Literal["low", "medium", "high"]  # 三级风险：low/medium/high（兼容旧版：low和medium对应normal）
     # 结构化卡片数据（可选，用于卡片展示）
     card_data: Optional[dict] = None  # 包含 theme, emotion_echo, clarification, suggestion
 

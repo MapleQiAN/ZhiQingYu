@@ -1,14 +1,17 @@
 """
-对话算法核心流程
-实现风格系统和三段式回复生成
+对话算法核心流程（增强版：支持5步骤系统）
+实现风格系统、5步骤对话流程、快速/深聊模式、体验模式
 """
 from app.schemas.chat import ChatMessage
 from app.schemas.style import (
-    StyleProfile, ParsedState, UserProfile, ReplyPlan, InterventionConfig
+    StyleProfile, ParsedState, UserProfile, ReplyPlan, InterventionConfig, ConversationState
 )
 from app.core.llm_provider import LLMProvider, LLMResult
 from app.core.style_resolver import StyleResolver
 from app.core.intervention_manager import get_intervention_manager
+from app.core.step_controller import StepController
+from app.core.five_step_planner import FiveStepPlanner
+from app.core.risk_detection import detect_self_harm_keywords, detect_violence_keywords
 
 
 # 预定义的干预模块（带描述信息，用于构建prompt）
@@ -166,12 +169,22 @@ def parse_user_message(message: ChatMessage, history: list[ChatMessage] = None) 
     elif any(kw in content for kw in listen_keywords):
         user_goal = "want_listen"
     
+    # 检测自伤和暴力关键词
+    has_self_harm = detect_self_harm_keywords(message.content)
+    has_violence = detect_violence_keywords(message.content)
+    
+    # 生成问题摘要（用于Step 1的问题复述）
+    problem_summary = message.content[:100] if len(message.content) > 100 else message.content
+    
     return ParsedState(
         emotions=detected_emotions,
         intensity=intensity,
         scene=detected_scene,
         riskLevel=risk_level,
-        userGoal=user_goal
+        userGoal=user_goal,
+        hasSelfHarmKeywords=has_self_harm,
+        hasViolenceKeywords=has_violence,
+        problemSummary=problem_summary
     )
 
 
@@ -331,47 +344,90 @@ def generate_reply_with_algorithm(
     llm_provider: LLMProvider,
     messages: list[ChatMessage],
     user_profile: UserProfile,
-) -> LLMResult:
+    conversation_state: ConversationState | None = None,
+) -> tuple[LLMResult, ConversationState]:
     """
-    使用对话算法生成回复
+    使用对话算法生成回复（增强版：支持5步骤系统）
     
-    流程：
-    1. 解析用户消息 -> ParsedState
-    2. 选择风格 -> StyleProfile
-    3. 选择干预模块 -> list[InterventionConfig]
-    4. 规划回复结构 -> ReplyPlan
-    5. 调用LLM生成回复 -> LLMResult
+    完整流程（符合文档要求）：
+    1. 接收用户输入，更新对话上下文
+    2. 判断用户是否发出了风格或模式相关指令，更新对话状态
+    3. 执行情绪解析与风险检测，得到结构化信息
+    4. 根据风险程度、用户偏好与场景，选择当前风格
+    5. 根据当前体验模式与对话进度，确定本轮要执行的步骤集合
+    6. 针对选定的步骤，规划本轮回复内容
+    7. 在生成之前或之后，进行安全与质量检查
+    8. 输出给用户
+    9. 更新对话状态
+    
+    Returns:
+        (LLMResult, ConversationState): 回复结果和更新后的对话状态
     """
-    # 1. 解析用户消息（传入历史消息以考虑上下文）
+    # 1. 接收用户输入
     user_message = messages[-1] if messages else None
     if not user_message or user_message.role != "user":
         # 如果没有用户消息，返回默认回复
-        return LLMResult(
-            reply="我在这里倾听你的想法。",
-            emotion="neutral",
-            intensity=2,
-            topics=["general"],
-            risk_level="normal"
+        default_state = conversation_state or ConversationState()
+        return (
+            LLMResult(
+                reply="我在这里倾听你的想法。",
+                emotion="neutral",
+                intensity=2,
+                topics=["general"],
+                risk_level="low"
+            ),
+            default_state
         )
     
-    # 传入历史消息以考虑上下文
+    # 2. 判断用户是否发出了风格或模式相关指令（已在user_profile中处理）
+    # 这里可以进一步检测用户输入中的模式切换指令
+    
+    # 3. 执行情绪解析与风险检测
     parsed = parse_user_message(user_message, history=messages[:-1] if len(messages) > 1 else [])
     
-    # 2. 选择风格
+    # 4. 根据风险程度、用户偏好与场景，选择当前风格
+    # 高风险时强制使用crisis_safe风格
     style = select_style(user_profile, parsed)
     
-    # 3. 选择干预模块
+    # 5. 根据当前体验模式与对话进度，确定本轮要执行的步骤集合
+    step_controller = StepController()
+    mode, steps_to_execute, experience_mode = step_controller.determine_mode_and_steps(
+        parsed=parsed,
+        user_profile=user_profile,
+        conversation_state=conversation_state,
+        user_input=user_message.content
+    )
+    
+    # 6. 选择干预模块
     interventions = select_interventions(parsed, style)
     
-    # 4. 规划回复结构
-    plan = plan_reply(style, parsed, interventions)
+    # 7. 针对选定的步骤，规划本轮回复内容
+    five_step_planner = FiveStepPlanner()
+    plan = five_step_planner.plan_steps(
+        parsed=parsed,
+        style=style,
+        interventions=interventions,
+        steps_to_execute=steps_to_execute,
+        conversation_state=conversation_state.model_dump() if conversation_state else None
+    )
     
-    # 5. 调用LLM生成回复
-    return llm_provider.generate_structured_reply(
+    # 8. 调用LLM生成回复
+    llm_result = llm_provider.generate_structured_reply(
         messages=messages,
         parsed=parsed,
         style=style,
         plan=plan,
         interventions=interventions
     )
+    
+    # 9. 更新对话状态
+    updated_state = step_controller.update_conversation_state(
+        conversation_state=conversation_state,
+        executed_steps=steps_to_execute,
+        mode=mode,
+        experience_mode=experience_mode,
+        step_content=plan.stepContents
+    )
+    
+    return llm_result, updated_state
 

@@ -77,76 +77,135 @@ class EmotionParser:
 只输出JSON，不要包含其他文本。"""
     
     def _rule_based_parse(self, user_input: str) -> ParsedState:
-        """基于规则的简单解析（作为后备方案）"""
+        """基于规则的简单解析（作为后备方案，增强版）"""
         user_lower = user_input.lower()
         
-        # 情绪关键词映射
+        # 情绪关键词映射（扩展版）
         emotion_keywords = {
-            "anxiety": ["焦虑", "担心", "紧张", "不安", "anxiety", "worried", "nervous"],
-            "sadness": ["难过", "伤心", "沮丧", "sad", "sadness", "depressed"],
-            "anger": ["生气", "愤怒", "恼火", "angry", "anger", "mad"],
-            "guilt": ["内疚", "愧疚", "guilt"],
-            "shame": ["羞耻", "丢脸", "shame"],
-            "fear": ["害怕", "恐惧", "fear", "scared"],
-            "tired": ["累", "疲惫", "tired", "exhausted"],
-            "overwhelmed": ["崩溃", "受不了", "overwhelmed"],
-            "joy": ["开心", "高兴", "快乐", "joy", "happy"],
+            "anxiety": ["焦虑", "担心", "紧张", "不安", "anxiety", "worried", "nervous", "worries"],
+            "sadness": ["难过", "伤心", "沮丧", "失落", "sad", "sadness", "depressed", "down"],
+            "anger": ["生气", "愤怒", "恼火", "angry", "anger", "mad", "furious"],
+            "guilt": ["内疚", "愧疚", "guilt", "guilty", "自责"],
+            "shame": ["羞耻", "丢脸", "shame", "ashamed", "embarrassed"],
+            "fear": ["害怕", "恐惧", "fear", "scared", "afraid", "terrified"],
+            "tired": ["累", "疲惫", "疲倦", "tired", "exhausted", "drained"],
+            "overwhelmed": ["崩溃", "受不了", "overwhelmed", "崩溃", "撑不住"],
+            "confusion": ["困惑", "迷茫", "confusion", "confused", "lost"],
+            "joy": ["开心", "高兴", "快乐", "joy", "happy", "pleased"],
+            "relief": ["放松", "relief", "relieved", "轻松"],
+            "calm": ["平静", "calm", "peaceful", "serene"],
         }
         
-        # 场景关键词映射
+        # 场景关键词映射（扩展版）
         scene_keywords = {
-            "exam": ["考试", "期末", "exam", "test"],
-            "study": ["学习", "作业", "study", "homework"],
-            "work": ["工作", "加班", "work", "job"],
-            "relationship": ["恋爱", "分手", "relationship", "love"],
-            "family": ["家庭", "父母", "family", "parent"],
-            "social": ["社交", "朋友", "social", "friend"],
+            "exam": ["考试", "期末", "测验", "exam", "test", "quiz"],
+            "study": ["学习", "作业", "study", "homework", "课程"],
+            "work": ["工作", "加班", "职场", "work", "job", "career", "同事", "老板"],
+            "career": ["职业", "career", "职业规划", "工作规划"],
+            "relationship": ["恋爱", "分手", "relationship", "love", "感情", "对象"],
+            "family": ["家庭", "父母", "家人", "family", "parent", "家人"],
+            "social": ["社交", "朋友", "social", "friend", "友谊"],
+            "health": ["健康", "身体", "health", "身体", "疾病"],
+            "self-worth": ["自我价值", "自卑", "self-worth", "自信", "自我"],
+            "future": ["未来", "前途", "future", "将来"],
         }
         
-        # 检测情绪
+        # 检测情绪（支持多情绪）
         detected_emotions = []
+        emotion_scores = {}
         for emotion, keywords in emotion_keywords.items():
-            if any(kw in user_lower for kw in keywords):
+            matches = sum(1 for kw in keywords if kw in user_lower)
+            if matches > 0:
                 detected_emotions.append(emotion)
+                emotion_scores[emotion] = matches
         
         if not detected_emotions:
             detected_emotions = ["neutral"]
         
+        # 限制最多3个主要情绪
+        if len(detected_emotions) > 3:
+            detected_emotions = sorted(detected_emotions, key=lambda e: emotion_scores.get(e, 0), reverse=True)[:3]
+        
         # 检测场景
         detected_scene = "general"
+        scene_scores = {}
         for scene, keywords in scene_keywords.items():
-            if any(kw in user_lower for kw in keywords):
-                detected_scene = scene
-                break
+            matches = sum(1 for kw in keywords if kw in user_lower)
+            if matches > 0:
+                scene_scores[scene] = matches
         
-        # 估算强度（简单规则：根据关键词数量和语气词）
-        intensity = 3
-        if any(word in user_lower for word in ["非常", "特别", "超级", "extremely", "very"]):
+        if scene_scores:
+            detected_scene = max(scene_scores, key=scene_scores.get)
+        
+        # 更细粒度的强度估算（1-10）
+        intensity = 5  # 默认中等强度
+        
+        extreme_intensity_words = ["极度", "超级", "非常非常", "extremely", "崩溃", "绝望"]
+        high_intensity_words = ["非常", "特别", "很", "very", "really", "much"]
+        medium_intensity_words = ["比较", "有点", "somewhat", "quite"]
+        low_intensity_words = ["稍微", "一点点", "a bit", "slightly", "little"]
+        
+        if any(word in user_lower for word in extreme_intensity_words):
+            intensity = 9
+        elif any(word in user_lower for word in high_intensity_words):
             intensity = 7
-        elif any(word in user_lower for word in ["有点", "稍微", "a bit", "slightly"]):
+        elif any(word in user_lower for word in medium_intensity_words):
+            intensity = 4
+        elif any(word in user_lower for word in low_intensity_words):
             intensity = 2
-        elif len(detected_emotions) > 1:
-            intensity = 5
         
-        # 检测风险等级
-        risk_keywords = ["不想活", "结束", "自杀", "自残", "suicide", "kill myself"]
-        risk_level = "high" if any(kw in user_lower for kw in risk_keywords) else "low"
-        if intensity >= 8:
-            risk_level = "medium" if risk_level == "low" else risk_level
+        # 根据情绪数量调整强度
+        if len(detected_emotions) > 1:
+            intensity = min(10, intensity + 1)
         
-        # 用户目标（简单推断）
-        user_goal = "want_relief"
-        if any(word in user_input for word in ["分析", "为什么", "分析", "analyze"]):
-            user_goal = "want_analysis"
-        elif any(word in user_input for word in ["计划", "怎么办", "plan", "how"]):
+        # 检测自伤和暴力关键词
+        self_harm_keywords = ["自杀", "自残", "不想活", "结束生命", "suicide", "kill myself", "self-harm", "不想活了", "割腕", "跳楼", "上吊"]
+        violence_keywords = ["伤害", "报复", "打", "kill", "hurt", "violence", "attack"]
+        
+        has_self_harm = any(kw in user_lower for kw in self_harm_keywords)
+        has_violence = any(kw in user_lower for kw in violence_keywords)
+        
+        # 检测风险等级（三级：low/medium/high）
+        high_risk_keywords = ["自杀", "自残", "不想活", "结束生命", "suicide", "kill myself", "self-harm", "不想活了", "结束自己"]
+        medium_risk_keywords = ["绝望", "没有希望", "hopeless", "desperate", "撑不下去", "活不下去"]
+        
+        risk_level = "low"
+        if any(kw in user_lower for kw in high_risk_keywords):
+            risk_level = "high"
+            intensity = max(intensity, 9)
+        elif any(kw in user_lower for kw in medium_risk_keywords):
+            risk_level = "medium"
+            intensity = max(intensity, 7)
+        elif intensity >= 8:
+            risk_level = "medium"
+        
+        # 增强的用户目标识别
+        user_goal = "want_relief"  # 默认想要缓解
+        
+        plan_keywords = ["怎么办", "建议", "如何", "how", "suggestion", "方法", "计划", "plan", "怎么做"]
+        analysis_keywords = ["理解", "为什么", "why", "understand", "分析", "analyze", "原因", "怎么回事", "为什么会"]
+        listen_keywords = ["倾听", "听我说", "想聊聊", "想说话", "想倾诉", "想聊聊"]
+        clarification_keywords = ["搞懂", "弄清楚", "明白", "理解自己", "为什么会这样"]
+        
+        if any(kw in user_input for kw in listen_keywords):
+            user_goal = "want_listen"
+        elif any(kw in user_input for kw in clarification_keywords) or any(kw in user_input for kw in analysis_keywords):
+            user_goal = "want_clarification"
+        elif any(kw in user_input for kw in plan_keywords):
             user_goal = "want_plan"
+        
+        # 生成问题摘要（简化版，用于Step 1的问题复述）
+        problem_summary = user_input[:100] if len(user_input) > 100 else user_input
         
         return ParsedState(
             emotions=detected_emotions[:3],  # 最多3个情绪
             intensity=intensity,
             scene=detected_scene,
             riskLevel=risk_level,
-            userGoal=user_goal
+            userGoal=user_goal,
+            hasSelfHarmKeywords=has_self_harm,
+            hasViolenceKeywords=has_violence,
+            problemSummary=problem_summary
         )
 
 

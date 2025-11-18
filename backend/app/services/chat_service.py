@@ -11,6 +11,8 @@ from app.schemas.style import UserProfile
 from app.core.llm_provider import LLMProvider
 from app.core.risk_detection import upgrade_risk_level_if_needed
 from app.core.conversation_algorithm import generate_reply_with_algorithm, parse_user_message
+from app.schemas.style import ConversationState
+import json
 from app.core.style_override_detector import StyleOverrideDetector
 from app.core.safety_checker import SafetyChecker
 import logging
@@ -76,27 +78,51 @@ class ChatService:
             recentStyleOverrideId=detected_style  # 使用检测到的风格覆盖
         )
         
-        # 5. 使用对话算法生成回复
+        # 5. 恢复对话状态（从session或创建新的）
+        conversation_state = None
+        if session and hasattr(session, 'conversation_state') and session.conversation_state:
+            try:
+                state_dict = json.loads(session.conversation_state) if isinstance(session.conversation_state, str) else session.conversation_state
+                conversation_state = ConversationState(**state_dict)
+            except Exception as e:
+                logger = logging.getLogger(__name__)
+                logger.warning(f"恢复对话状态失败: {e}，将创建新状态")
+                conversation_state = None
+        
+        # 6. 使用对话算法生成回复（增强版：支持5步骤系统）
         try:
-            llm_result = generate_reply_with_algorithm(
+            llm_result, updated_conversation_state = generate_reply_with_algorithm(
                 self.llm_provider,
                 messages,
-                user_profile
+                user_profile,
+                conversation_state=conversation_state
             )
+            
+            # 保存对话状态到session（如果session支持）
+            if session and hasattr(session, 'conversation_state'):
+                try:
+                    session.conversation_state = json.dumps(updated_conversation_state.model_dump(), ensure_ascii=False)
+                    self.db.commit()
+                except Exception as e:
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"保存对话状态失败: {e}")
+            
             logger = logging.getLogger(__name__)
             logger.info("=" * 80)
-            logger.info("[Chat Service] AI回复生成完成")
+            logger.info("[Chat Service] AI回复生成完成（5步骤系统）")
             logger.info(f"  用户消息: {user_message.content if user_message else 'N/A'}")
             logger.info(f"  回复长度: {len(llm_result.reply)} 字符")
             logger.info(f"  完整回复内容:\n{llm_result.reply}")
             logger.info(f"  情绪: {llm_result.emotion}, 强度: {llm_result.intensity}")
             logger.info(f"  主题: {llm_result.topics}, 风险等级: {llm_result.risk_level}")
+            logger.info(f"  对话模式: {updated_conversation_state.currentMode}, 当前步骤: {updated_conversation_state.currentStep}")
             logger.info("=" * 80)
         except Exception as e:
             # 如果新算法失败，回退到旧方法
             logger = logging.getLogger(__name__)
             logger.warning(f"对话算法失败，回退到旧方法: {str(e)}", exc_info=True)
             llm_result = self.llm_provider.generate_reply(messages)
+            updated_conversation_state = ConversationState()  # 创建默认状态
             logger.info("=" * 80)
             logger.info("[Chat Service] AI回复生成完成（使用旧方法）")
             logger.info(f"  用户消息: {user_message.content if user_message else 'N/A'}")
@@ -104,7 +130,7 @@ class ChatService:
             logger.info(f"  完整回复内容:\n{llm_result.reply}")
             logger.info("=" * 80)
         
-        # 6. 应用风险检测规则（二次检查）
+        # 7. 应用风险检测规则（二次检查）
         if user_message:
             final_risk_level = upgrade_risk_level_if_needed(
                 llm_result.risk_level,
@@ -113,7 +139,7 @@ class ChatService:
             )
             llm_result.risk_level = final_risk_level
         
-        # 6.5. 质量自检（在保存前检查回复质量）
+        # 7.5. 质量自检（在保存前检查回复质量）
         if user_message:
             try:
                 # 重新解析用户消息以获取ParsedState（传入历史消息）
@@ -140,7 +166,7 @@ class ChatService:
                 logger = logging.getLogger(__name__)
                 logger.error(f"质量检查过程出错: {str(e)}", exc_info=True)
         
-        # 7. 保存助手回复
+        # 8. 保存助手回复
         assistant_message = Message(
             session_id=session_id,
             role="assistant",
@@ -152,7 +178,7 @@ class ChatService:
         )
         self.db.add(assistant_message)
         
-        # 8. 更新或创建DailySummary
+        # 9. 更新或创建DailySummary
         self._update_daily_summary(
             date.today(),
             llm_result.emotion,
@@ -162,13 +188,17 @@ class ChatService:
         
         self.db.commit()
         
+        # 映射风险级别：为了保持API兼容性，将low/medium/high映射到normal/high
+        # low和medium都映射到normal，high保持为high
+        api_risk_level = "normal" if llm_result.risk_level in ["low", "medium"] else llm_result.risk_level
+        
         return {
             "session_id": session_id,
             "reply": llm_result.reply,
             "emotion": llm_result.emotion,
             "intensity": llm_result.intensity,
             "topics": llm_result.topics,
-            "risk_level": llm_result.risk_level,
+            "risk_level": api_risk_level,  # 映射后的风险级别（保持API兼容）
             "card_data": llm_result.card_data
         }
     
