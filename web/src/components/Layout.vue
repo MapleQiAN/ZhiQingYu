@@ -572,5 +572,15 @@ const handleLocaleSelect = (key: string | number) => {
     gap: 0.75rem;
   }
 }
+
+:global(body.card-fullscreen-active) .warm-header {
+  opacity: 0;
+  transform: translateY(-100%);
+  pointer-events: none;
+}
+
+:global(body.card-fullscreen-active) .content-wrapper {
+  padding-top: var(--spacing-sm);
+}
 </style>
 

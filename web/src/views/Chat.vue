@@ -291,6 +291,7 @@ const selectedAIStyle = ref<string | null>(null)
 const selectedChatMode = ref<'deep' | 'quick' | null>('deep')
 const cardFullscreenVisible = ref(false)
 const fullscreenCardData = ref<CardData | null>(null)
+const FULLSCREEN_BODY_CLASS = 'card-fullscreen-active'
 let previousBodyOverflow = ''
 
 // 体验模式选项（使用computed确保国际化文本正确更新）
@@ -580,12 +581,14 @@ const openCardFullscreen = (cardData: CardData | null | undefined) => {
   cardFullscreenVisible.value = true
   previousBodyOverflow = document.body.style.overflow
   document.body.style.overflow = 'hidden'
+  document.body.classList.add(FULLSCREEN_BODY_CLASS)
 }
 
 const closeCardFullscreen = () => {
   cardFullscreenVisible.value = false
   fullscreenCardData.value = null
   document.body.style.overflow = previousBodyOverflow
+  document.body.classList.remove(FULLSCREEN_BODY_CLASS)
 }
 
 const sanitizeFileName = (value: string) => {
@@ -616,6 +619,7 @@ const handleExportCard = (cardData?: CardData | null) => {
 
 onUnmounted(() => {
   document.body.style.overflow = previousBodyOverflow
+  document.body.classList.remove(FULLSCREEN_BODY_CLASS)
 })
 </script>
 
@@ -1460,44 +1464,56 @@ onUnmounted(() => {
 .card-fullscreen-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
+  background: rgba(8, 2, 12, 0.55);
+  backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-xl);
-  z-index: 2000;
+  padding: var(--spacing-lg);
+  z-index: 4000;
 }
 
 .card-fullscreen-content {
   position: relative;
-  width: min(960px, 100%);
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: var(--spacing-lg);
-  border-radius: var(--radius-2xl);
+  width: min(1200px, calc(100vw - 48px));
+  height: min(96vh, calc(100vh - 48px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(var(--spacing-lg), 3vw, var(--spacing-2xl));
+  border-radius: var(--radius-3xl);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 245, 247, 0.98));
+  border: var(--border-width-thin) solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
 }
 
 .card-fullscreen-close {
   position: absolute;
-  top: var(--spacing-md);
-  right: var(--spacing-md);
+  top: var(--spacing-lg);
+  right: var(--spacing-lg);
   background: rgba(255, 255, 255, 0.8) !important;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1) !important;
+  z-index: 2;
 }
 
 .card-fullscreen-export {
   position: absolute;
-  top: var(--spacing-md);
-  right: calc(var(--spacing-md) + 52px);
+  top: var(--spacing-lg);
+  right: calc(var(--spacing-lg) + 52px);
   background: rgba(255, 255, 255, 0.9) !important;
   box-shadow: 0 6px 18px rgba(232, 180, 184, 0.2) !important;
   color: var(--color-primary-dark) !important;
+  z-index: 2;
 }
 
 .heart-card-fullscreen {
-  max-height: 80vh;
+  width: 100%;
+  height: 100%;
+  max-height: none;
   overflow-y: auto;
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  border-radius: var(--radius-2xl);
 }
 
 .loading-bubble {
