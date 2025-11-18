@@ -344,21 +344,25 @@ const formatSessionTime = (timeStr: string | null) => {
   const now = new Date()
   const diff = now.getTime() - date.getTime()
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  
+  const hours = date.getHours()
+  const minutes = date.getMinutes()
+  const timeStr_formatted = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+  const month = date.getMonth() + 1
+  const day = date.getDate()
 
   if (days === 0) {
-    // 今天，显示时间
-    const hours = date.getHours()
-    const minutes = date.getMinutes()
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+    // 今天，显示 "今天 HH:mm"
+    return `今天 ${timeStr_formatted}`
   } else if (days === 1) {
-    return t('common.yesterday')
+    // 昨天，显示 "昨天 HH:mm"
+    return `昨天 ${timeStr_formatted}`
   } else if (days < 7) {
-    return `${days}${t('common.days')}前`
+    // 一周内，显示 "X天前 HH:mm"
+    return `${days}天前 ${timeStr_formatted}`
   } else {
-    // 超过7天，显示日期
-    const month = date.getMonth() + 1
-    const day = date.getDate()
-    return `${month}/${day}`
+    // 超过7天，显示日期和时间 "MM/DD HH:mm"
+    return `${month}/${day} ${timeStr_formatted}`
   }
 }
 
