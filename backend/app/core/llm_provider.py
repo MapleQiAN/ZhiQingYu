@@ -87,7 +87,7 @@ class MockLLMProvider(LLMProvider):
             reply = "我在这里倾听你的想法。无论你想分享什么，我都会认真对待。"
         
         topics = ["general"]
-        risk_level = "normal"
+        risk_level = "low"  # 使用 "low" 而不是 "normal"
         
         return LLMResult(
             reply=reply,

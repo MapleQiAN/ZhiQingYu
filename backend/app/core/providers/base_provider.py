@@ -4,11 +4,29 @@ Shared JSON chat provider utilities.
 import json
 import logging
 from abc import abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Literal
 
 from app.core.llm_provider import LLMProvider, LLMResult
 from app.schemas.chat import ChatMessage
 from app.schemas.style import StyleProfile, ParsedState, ReplyPlan, InterventionConfig
+
+
+def normalize_risk_level(risk_level: str) -> Literal["low", "medium", "high"]:
+    """
+    规范化风险级别，将旧版的 "normal" 映射为 "low"
+    
+    Args:
+        risk_level: 原始风险级别（可能是 "normal", "low", "medium", "high"）
+        
+    Returns:
+        规范化的风险级别（"low", "medium", 或 "high"）
+    """
+    if risk_level == "normal":
+        return "low"
+    if risk_level in ("low", "medium", "high"):
+        return risk_level
+    # 默认返回 low
+    return "low"
 
 
 class JsonChatLLMProvider(LLMProvider):
@@ -34,7 +52,7 @@ class JsonChatLLMProvider(LLMProvider):
                 emotion="neutral",
                 intensity=2,
                 topics=[],
-                risk_level="normal",
+                risk_level="low",
             )
 
     def generate_structured_reply(
@@ -54,12 +72,14 @@ class JsonChatLLMProvider(LLMProvider):
             return self._build_structured_result(result_dict, parsed)
         except Exception:
             self.logger.exception("[LLM Provider] generate_structured_reply failed, returning safe response")
+            # 规范化风险级别：parsed.riskLevel 可能是 "low", "medium", "high"
+            parsed_risk = normalize_risk_level(parsed.riskLevel) if hasattr(parsed, 'riskLevel') else "low"
             return LLMResult(
                 reply=self.SAFE_REPLY,
                 emotion=parsed.emotions[0] if parsed.emotions else "neutral",
                 intensity=parsed.intensity,
                 topics=[parsed.scene],
-                risk_level="high" if parsed.riskLevel == "high" else "normal",
+                risk_level=parsed_risk,
             )
 
     @abstractmethod
@@ -100,7 +120,7 @@ class JsonChatLLMProvider(LLMProvider):
             emotion=result_dict.get("emotion", "neutral"),
             intensity=intensity,
             topics=result_dict.get("topics", []),
-            risk_level=result_dict.get("risk_level", "normal"),
+            risk_level=normalize_risk_level(result_dict.get("risk_level", "normal")),
             card_data=card_data,
         )
 
@@ -131,12 +151,19 @@ class JsonChatLLMProvider(LLMProvider):
             fallback=parsed.intensity,
         )
 
+        # 规范化风险级别：从 result_dict 获取，如果没有则使用 parsed.riskLevel
+        raw_risk = result_dict.get("risk_level")
+        if raw_risk is None:
+            # 如果没有从 LLM 返回，使用 parsed 的值
+            raw_risk = parsed.riskLevel if hasattr(parsed, 'riskLevel') else "low"
+        normalized_risk = normalize_risk_level(raw_risk)
+        
         return LLMResult(
             reply=reply,
             emotion=result_dict.get("emotion", parsed.emotions[0] if parsed.emotions else "neutral"),
             intensity=intensity,
             topics=result_dict.get("topics", [parsed.scene]),
-            risk_level=result_dict.get("risk_level", "high" if parsed.riskLevel == "high" else "normal"),
+            risk_level=normalized_risk,
             card_data=card_data,
         )
 
@@ -158,7 +185,7 @@ class JsonChatLLMProvider(LLMProvider):
    - emotion: 从以下选项中选择一个：sadness, anxiety, anger, guilt, shame, fear, tired, overwhelmed, confusion, joy, relief, calm, neutral
    - intensity: 1-10的整数，表示情绪强度（1-3为轻度，4-6为中度，7-8为重度，9-10为极重度）
    - topics: 主题列表，如 ["study", "work", "relationship", "family", "self-doubt"] 等
-4. 判断是否存在高危情绪（如自残/自杀意念），如果存在则 risk_level = "high"，否则为 "normal"
+4. 判断风险级别：risk_level 必须是 "low"（低风险）、"medium"（中等风险）或 "high"（高风险，如自残/自杀意念）
 
 重要要求：
 - 你的回复应该详细、丰富、有深度，不要过于简短
@@ -180,7 +207,7 @@ class JsonChatLLMProvider(LLMProvider):
   "emotion": "情绪标签",
   "intensity": 情绪强度数字,
   "topics": ["主题1", "主题2"],
-  "risk_level": "normal" 或 "high"
+  "risk_level": "low"、"medium" 或 "high"（"low"表示低风险，"medium"表示中等风险，"high"表示高风险）
 }
 
 只输出JSON，不要包含任何其他文本。"""
@@ -222,7 +249,8 @@ class JsonChatLLMProvider(LLMProvider):
         }
         structure_text = " → ".join([parts_desc.get(p, p) for p in plan.structure.get("parts", [])])
 
-        risk_level_value = "high" if parsed.riskLevel == "high" else "normal"
+        # 规范化风险级别：parsed.riskLevel 应该是 "low", "medium", 或 "high"
+        risk_level_value = normalize_risk_level(parsed.riskLevel) if hasattr(parsed, 'riskLevel') else "low"
 
         return f"""你是一个情绪陪伴 AI，受过基础心理学训练，但不是医生，不进行诊断或治疗。
 
