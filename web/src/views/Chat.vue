@@ -80,32 +80,32 @@
               {{ todayEmotion ? getEmotionLabel(todayEmotion) : $t('chat.noEmotion') }}
             </span>
           </div>
-        </div>
-        <!-- AI配置选择器 -->
-        <div class="ai-config-selectors">
-          <div class="selector-group">
-            <label class="selector-label">{{ $t('chat.aiStyle') }}</label>
+          <!-- 配置选择器（同一行） -->
+          <div class="config-selectors-inline">
+            <n-select
+              v-model:value="selectedExperienceMode"
+              :options="experienceModesForSelect"
+              :placeholder="$t('chat.experienceMode')"
+              clearable
+              size="small"
+              class="inline-selector"
+            />
             <n-select
               v-model:value="selectedAIStyle"
               :options="aiStyles"
               :placeholder="$t('chat.aiStyle')"
               clearable
               size="small"
-              class="style-selector"
+              class="inline-selector"
             />
-          </div>
-          <div class="selector-group">
-            <label class="selector-label">{{ $t('chat.aiMode') }}</label>
-            <n-radio-group v-model:value="selectedChatMode" size="small" class="mode-radio-group">
-              <n-radio
-                v-for="mode in chatModes"
-                :key="mode.value"
-                :value="mode.value"
-                class="mode-radio"
-              >
-                {{ mode.label }}
-              </n-radio>
-            </n-radio-group>
+            <n-select
+              v-model:value="selectedChatMode"
+              :options="chatModesForSelect"
+              :placeholder="$t('chat.aiMode')"
+              clearable
+              size="small"
+              class="inline-selector"
+            />
           </div>
         </div>
       </n-card>
@@ -169,27 +169,6 @@
 
     <!-- 输入区域 -->
     <n-card class="input-card">
-      <!-- 体验模式选择器 -->
-      <div v-if="messages.length === 0" class="experience-mode-selector">
-        <div class="mode-label">{{ $t('chat.experienceMode') }}</div>
-        <div class="mode-buttons">
-          <n-button
-            v-for="mode in experienceModes"
-            :key="mode.value"
-            :type="selectedExperienceMode === mode.value ? 'primary' : 'default'"
-            :ghost="selectedExperienceMode !== mode.value"
-            size="small"
-            @click="selectedExperienceMode = mode.value"
-            class="mode-button"
-          >
-            <template #icon>
-              <span>{{ mode.icon }}</span>
-            </template>
-            {{ mode.label }}
-          </n-button>
-        </div>
-      </div>
-      
       <!-- 风险级别警告 -->
       <div v-if="lastRiskLevel === 'high'" class="risk-warning">
         <n-alert type="warning" :title="$t('chat.riskWarning')" :show-icon="true">
@@ -269,6 +248,14 @@ const experienceModes = computed(() => [
   { value: 'D' as const, label: t('chat.modeD'), icon: '🌊' },
 ])
 
+// 体验模式选项（用于下拉选择器）
+const experienceModesForSelect = computed(() => 
+  experienceModes.value.map(mode => ({
+    value: mode.value,
+    label: `${mode.icon} ${mode.label}`
+  }))
+)
+
 // AI风格选项
 const aiStyles = computed(() => [
   { value: 'comfort', label: t('chat.styleComfort') },
@@ -286,6 +273,14 @@ const chatModes = computed(() => [
   { value: 'deep' as const, label: t('chat.deepChatMode') },
   { value: 'quick' as const, label: t('chat.quickMode') },
 ])
+
+// AI模式选项（用于下拉选择器）
+const chatModesForSelect = computed(() => 
+  chatModes.value.map(mode => ({
+    value: mode.value,
+    label: mode.label
+  }))
+)
 
 const scrollToBottom = async () => {
   await nextTick()
@@ -814,7 +809,6 @@ const getEmotionLabel = (emotion: string | null) => {
 
 .emotion-card:hover {
   box-shadow: var(--shadow-warm-lg) !important;
-  transform: translateY(-3px);
   border-color: var(--border-color-base) !important;
 }
 
@@ -823,6 +817,8 @@ const getEmotionLabel = (emotion: string | null) => {
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-sm) 0;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
 }
 
 .emotion-left {
@@ -879,14 +875,198 @@ const getEmotionLabel = (emotion: string | null) => {
   background-clip: text;
 }
 
-.ai-config-selectors {
-  margin-top: var(--spacing-md);
-  padding-top: var(--spacing-md);
-  border-top: var(--border-width-thin) solid var(--border-color-light);
+.config-selectors-inline {
   display: flex;
-  gap: var(--spacing-lg);
-  flex-wrap: wrap;
-  align-items: flex-start;
+  gap: var(--spacing-sm);
+  align-items: center;
+  flex-wrap: nowrap;
+  margin-left: auto;
+}
+
+.inline-selector {
+  min-width: 120px;
+  flex-shrink: 1;
+}
+
+/* 第一个选择器可以自适应宽度 */
+.config-selectors-inline .inline-selector:first-child {
+  min-width: 150px;
+  flex: 1 1 auto;
+}
+
+/* 可爱温暖的选择器样式 */
+.inline-selector :deep(.n-base-selection) {
+  border-radius: 20px !important;
+  border: 2px solid rgba(255, 182, 193, 0.4) !important;
+  background: linear-gradient(135deg, var(--color-primary-lighter) 0%, var(--color-secondary-lighter) 100%) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 2px 8px rgba(255, 182, 193, 0.15) !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  color: var(--text-primary) !important;
+  min-height: 36px !important;
+}
+
+/* 移除所有边框元素（包括验证状态的绿色边框） */
+.inline-selector :deep(.n-base-selection__border),
+.inline-selector :deep(.n-base-selection__state-border),
+.inline-selector :deep(.n-base-selection__border--success),
+.inline-selector :deep(.n-base-selection__border--warning),
+.inline-selector :deep(.n-base-selection__border--error),
+.inline-selector :deep(.n-base-selection__border--focus),
+.inline-selector :deep(.n-base-selection__border--active),
+.inline-selector :deep(.n-base-selection__border--hover) {
+  display: none !important;
+  border: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 移除验证状态的绿色边框和背景 */
+.inline-selector :deep(.n-select--success .n-base-selection),
+.inline-selector :deep(.n-select--success .n-base-selection__border),
+.inline-selector :deep(.n-select--warning .n-base-selection),
+.inline-selector :deep(.n-select--warning .n-base-selection__border),
+.inline-selector :deep(.n-select--error .n-base-selection),
+.inline-selector :deep(.n-select--error .n-base-selection__border),
+.inline-selector :deep(.n-base-selection--success),
+.inline-selector :deep(.n-base-selection--warning),
+.inline-selector :deep(.n-base-selection--error) {
+  border-color: rgba(255, 182, 193, 0.4) !important;
+  box-shadow: 0 2px 8px rgba(255, 182, 193, 0.15) !important;
+  background: linear-gradient(135deg, var(--color-primary-lighter) 0%, var(--color-secondary-lighter) 100%) !important;
+}
+
+/* 移除所有可能的绿色 box-shadow */
+.inline-selector :deep(.n-select--success),
+.inline-selector :deep(.n-select--success *),
+.inline-selector :deep(.n-select--warning),
+.inline-selector :deep(.n-select--warning *),
+.inline-selector :deep(.n-select--error),
+.inline-selector :deep(.n-select--error *) {
+  box-shadow: none !important;
+}
+
+.inline-selector :deep(.n-select--success .n-base-selection),
+.inline-selector :deep(.n-select--warning .n-base-selection),
+.inline-selector :deep(.n-select--error .n-base-selection) {
+  box-shadow: 0 2px 8px rgba(255, 182, 193, 0.15) !important;
+}
+
+.inline-selector :deep(.n-base-selection:hover) {
+  border-color: rgba(255, 182, 193, 0.7) !important;
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-secondary-light) 100%) !important;
+  box-shadow: 0 4px 12px rgba(255, 182, 193, 0.25) !important;
+  transform: translateY(-1px);
+  color: var(--text-primary) !important;
+}
+
+.inline-selector :deep(.n-base-selection--active),
+.inline-selector :deep(.n-base-selection--focus) {
+  border-color: rgba(255, 105, 180, 0.6) !important;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%) !important;
+  box-shadow: 0 4px 16px rgba(255, 182, 193, 0.35), 0 0 0 3px rgba(255, 182, 193, 0.2) !important;
+  color: var(--text-primary) !important;
+}
+
+.inline-selector :deep(.n-base-selection__placeholder) {
+  color: var(--text-disabled);
+  font-weight: 500;
+}
+
+.inline-selector :deep(.n-base-selection__input) {
+  color: var(--text-primary) !important;
+  font-weight: 500;
+}
+
+.inline-selector :deep(.n-base-selection__arrow) {
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.inline-selector :deep(.n-base-selection:hover .n-base-selection__arrow) {
+  color: var(--color-primary);
+  transform: scale(1.1);
+}
+
+/* 下拉菜单样式 - 使用全局样式覆盖，确保圆角更大，无白色背景 */
+.inline-selector :deep(.n-base-select-menu),
+.inline-selector :deep(.n-select-menu),
+.inline-selector :deep(.n-popover),
+.inline-selector :deep(.n-popover__content),
+.inline-selector :deep(.n-base-select-menu__content),
+.inline-selector :deep(.n-select-menu__content),
+.inline-selector :deep(.n-base-select-menu__wrapper),
+.inline-selector :deep(.n-select-menu__wrapper) {
+  border-radius: var(--radius-2xl) !important;
+  border: 2px solid rgba(255, 182, 193, 0.3) !important;
+  background: linear-gradient(135deg, var(--color-primary-lighter) 0%, var(--color-secondary-lighter) 100%) !important;
+  box-shadow: 0 8px 24px rgba(255, 182, 193, 0.2) !important;
+  backdrop-filter: blur(10px);
+  overflow: hidden !important;
+}
+
+/* 彻底移除所有可能的白色背景 */
+.inline-selector :deep(.n-base-select-menu *),
+.inline-selector :deep(.n-select-menu *),
+.inline-selector :deep(.n-popover *),
+.inline-selector :deep(.n-popover__content *) {
+  background-color: transparent !important;
+}
+
+/* 确保下拉菜单内部容器也是圆角，并移除白色背景 */
+.inline-selector :deep(.n-base-select-menu .n-scrollbar),
+.inline-selector :deep(.n-select-menu .n-scrollbar),
+.inline-selector :deep(.n-base-select-menu .n-scrollbar-content),
+.inline-selector :deep(.n-select-menu .n-scrollbar-content),
+.inline-selector :deep(.n-base-select-menu .n-scrollbar__container),
+.inline-selector :deep(.n-select-menu .n-scrollbar__container),
+.inline-selector :deep(.n-base-select-menu .n-scrollbar__view),
+.inline-selector :deep(.n-select-menu .n-scrollbar__view) {
+  border-radius: var(--radius-2xl) !important;
+  background: transparent !important;
+}
+
+/* 移除下拉菜单中的白色背景，但保留渐变背景 */
+.inline-selector :deep(.n-base-select-menu .n-list),
+.inline-selector :deep(.n-select-menu .n-list),
+.inline-selector :deep(.n-base-select-menu .n-list-item),
+.inline-selector :deep(.n-select-menu .n-list-item),
+.inline-selector :deep(.n-base-select-menu__empty),
+.inline-selector :deep(.n-select-menu__empty) {
+  background: transparent !important;
+}
+
+/* 确保主容器有渐变背景 */
+.inline-selector :deep(.n-base-select-menu),
+.inline-selector :deep(.n-select-menu),
+.inline-selector :deep(.n-popover) {
+  background: linear-gradient(135deg, var(--color-primary-lighter) 0%, var(--color-secondary-lighter) 100%) !important;
+  background-color: transparent !important;
+}
+
+.inline-selector :deep(.n-base-select-option),
+.inline-selector :deep(.n-select-option),
+.inline-selector :deep(.n-base-select-option__content) {
+  border-radius: 12px !important;
+  margin: 4px 8px !important;
+  transition: all 0.2s ease !important;
+  color: var(--text-primary) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.inline-selector :deep(.n-base-select-option:hover),
+.inline-selector :deep(.n-select-option:hover) {
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-secondary-light) 100%) !important;
+  transform: translateX(4px);
+}
+
+.inline-selector :deep(.n-base-select-option--selected),
+.inline-selector :deep(.n-select-option--selected) {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%) !important;
+  color: var(--text-primary) !important;
+  font-weight: 600;
 }
 
 .selector-group {
@@ -925,41 +1105,6 @@ const getEmotionLabel = (emotion: string | null) => {
   box-shadow: 0 0 0 3px var(--color-primary-lighter);
 }
 
-.mode-radio-group {
-  display: flex;
-  gap: var(--spacing-md);
-  flex-wrap: wrap;
-}
-
-.mode-radio {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius-lg);
-  transition: all var(--transition-base);
-}
-
-.mode-radio :deep(.n-radio__label) {
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
-  font-weight: var(--font-weight-medium);
-}
-
-.mode-radio :deep(.n-radio__dot) {
-  border-color: var(--border-color-base);
-}
-
-.mode-radio :deep(.n-radio--checked .n-radio__dot) {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-}
-
-.mode-radio :deep(.n-radio--checked .n-radio__label) {
-  color: var(--color-primary);
-  font-weight: var(--font-weight-semibold);
-}
-
-.mode-radio:hover :deep(.n-radio__dot) {
-  border-color: var(--color-primary);
-}
 
 .messages-container {
   flex: 1;
@@ -1254,38 +1399,6 @@ const getEmotionLabel = (emotion: string | null) => {
   padding: var(--spacing-md) !important;
 }
 
-.experience-mode-selector {
-  margin-bottom: var(--spacing-lg);
-  padding-bottom: var(--spacing-lg);
-  border-bottom: var(--border-width-thin) solid var(--border-color-light);
-}
-
-.mode-label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-secondary);
-  margin-bottom: var(--spacing-md);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.mode-buttons {
-  display: flex;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
-}
-
-.mode-button {
-  flex: 1;
-  min-width: 100px;
-  border-radius: var(--radius-lg);
-  transition: all var(--transition-base);
-}
-
-.mode-button:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-warm-sm);
-}
 
 .risk-warning {
   margin-bottom: var(--spacing-md);
@@ -1631,7 +1744,7 @@ const getEmotionLabel = (emotion: string | null) => {
   
   .emotion-card-content {
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--spacing-md);
     align-items: flex-start;
   }
   
@@ -1639,13 +1752,37 @@ const getEmotionLabel = (emotion: string | null) => {
     width: 100%;
   }
   
-  .ai-config-selectors {
-    flex-direction: column;
-    gap: var(--spacing-md);
+  .config-selectors-inline {
+    width: 100%;
+    margin-left: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--spacing-xs);
+    overflow-x: auto;
+    padding-bottom: 4px;
   }
   
-  .selector-group {
-    min-width: 100%;
+  .config-selectors-inline::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .config-selectors-inline::-webkit-scrollbar-track {
+    background: rgba(255, 182, 193, 0.1);
+    border-radius: 10px;
+  }
+  
+  .config-selectors-inline::-webkit-scrollbar-thumb {
+    background: rgba(255, 182, 193, 0.4);
+    border-radius: 10px;
+  }
+  
+  .config-selectors-inline::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 182, 193, 0.6);
+  }
+  
+  .inline-selector {
+    min-width: 100px;
+    flex-shrink: 0;
   }
   
   .message-bubble {
