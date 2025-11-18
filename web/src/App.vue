@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider :theme="theme" :locale="locale" :date-locale="dateLocale">
+  <n-config-provider :theme="theme" :locale="locale" :date-locale="dateLocale" :theme-overrides="themeOverrides">
     <n-message-provider>
       <n-notification-provider>
         <n-dialog-provider>
@@ -15,12 +15,40 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NConfigProvider, NMessageProvider, NNotificationProvider, NDialogProvider, zhCN, enUS, dateZhCN, dateEnUS } from 'naive-ui'
+import {
+  NConfigProvider,
+  NMessageProvider,
+  NNotificationProvider,
+  NDialogProvider,
+  zhCN,
+  enUS,
+  dateZhCN,
+  dateEnUS
+} from 'naive-ui'
+import type { GlobalThemeOverrides } from 'naive-ui'
 import Layout from './components/Layout.vue'
 
 const { locale: i18nLocale } = useI18n()
 
 const theme = computed(() => null) // 使用默认主题
+
+const themeOverrides = computed<GlobalThemeOverrides>(() => {
+  const deepPeach = {
+    base: '#d9598c',
+    hover: '#e874a2',
+    pressed: '#c24a79',
+    suppl: '#ff9fbf'
+  }
+
+  return {
+    common: {
+      primaryColor: deepPeach.base,
+      primaryColorHover: deepPeach.hover,
+      primaryColorPressed: deepPeach.pressed,
+      primaryColorSuppl: deepPeach.suppl
+    }
+  }
+})
 
 const locale = computed(() => {
   return i18nLocale.value === 'zh' ? zhCN : enUS
