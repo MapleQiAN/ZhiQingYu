@@ -117,31 +117,31 @@ const buildFiveStepSections = (cardData: CardData) => {
   const sections = [
     buildSection({
       icon: '💭',
-      title: 'Step 1 · 情绪接住 & 问题确认',
+      title: '情绪收纳箱',
       accent: '#FFB6C1',
       content: renderDoubleColumn(cardData.step1_emotion_mirror, cardData.step1_problem_restate),
     }),
     buildSection({
       icon: '🔍',
-      title: 'Step 2 · 结构化拆解问题',
+      title: '一起剖析问题',
       accent: '#B0C4DE',
       content: cardData.step2_breakdown ? renderMarkdown(cardData.step2_breakdown) : '',
     }),
     buildSection({
       icon: '💡',
-      title: 'Step 3 · 专业视角解释',
+      title: ' 或许可以专业一些',
       accent: '#FFDAB9',
       content: cardData.step3_explanation ? renderMarkdown(cardData.step3_explanation) : '',
     }),
     buildSection({
       icon: '🌱',
-      title: 'Step 4 · 小步可执行建议',
+      title: '小步可执行建议',
       accent: '#90EE90',
       content: renderArrayOrString(cardData.step4_suggestions),
     }),
     buildSection({
       icon: '🌺',
-      title: 'Step 5 · 温柔收尾 & 小结',
+      title: '希望给你一个温柔的收尾',
       accent: '#DDA0DD',
       content: cardData.step5_summary ? renderMarkdown(cardData.step5_summary) : '',
     }),
