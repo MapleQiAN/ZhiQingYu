@@ -29,6 +29,7 @@ class JsonChatLLMProvider(LLMProvider):
 
     def generate_reply(self, messages: List[ChatMessage]) -> LLMResult:
         system_prompt = build_simple_prompt()
+        self._log_prompt("simple", system_prompt)
         chat_messages = self._format_messages(system_prompt, messages)
 
         try:
@@ -74,6 +75,7 @@ class JsonChatLLMProvider(LLMProvider):
         conversation_stage: Optional[Literal["chatting", "exploring", "summarizing", "inviting", "card_generated"]] = None,
     ) -> LLMResult:
         system_prompt = build_structured_prompt(parsed, style, plan, interventions, conversation_stage)
+        self._log_prompt("structured", system_prompt)
         chat_messages = self._format_messages(system_prompt, messages)
 
         try:
@@ -213,6 +215,7 @@ class JsonChatLLMProvider(LLMProvider):
             interventions=interventions,
             previous_steps=previous_steps
         )
+        self._log_prompt(f"deep_step_{step_num}", system_prompt)
         
         # 格式化消息
         chat_messages = self._format_messages(system_prompt, messages)
@@ -264,6 +267,20 @@ class JsonChatLLMProvider(LLMProvider):
         for msg in messages:
             formatted.append({"role": msg.role, "content": msg.content})
         return formatted
+
+    def _log_prompt(self, mode: str, prompt: str) -> None:
+        """
+        输出发送给AI的系统提示词，方便在控制台查看。
+        """
+        if not prompt:
+            return
+        header = f"[Prompt][{mode}] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+        footer = "[Prompt] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+        message = f"{header}\n{prompt}\n{footer}"
+        # logger输出到控制台
+        self.logger.info(message)
+        # 直接打印一份，确保在未配置日志时也能看到
+        print(message)
 
     def _parse_json_payload(self, payload: str) -> Dict[str, Any]:
         if payload is None:
