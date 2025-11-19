@@ -21,6 +21,7 @@ export interface ApiResponse<T> {
 export interface CardData {
   theme?: string
   useThreePart?: boolean  // 是否使用简洁模式（3卡片），false表示使用5步骤模式（5卡片）
+  user_question?: string  // 用户提问内容（可以是多轮对话后总结的疑问，也可以是用户直接提出的问题）
   // 简洁模式（3卡片）字段
   emotion_echo?: string
   clarification?: string

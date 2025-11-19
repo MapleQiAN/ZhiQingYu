@@ -188,6 +188,70 @@ def parse_user_message(message: ChatMessage, history: list[ChatMessage] = None) 
     )
 
 
+def extract_resources_from_conversation(messages: list[ChatMessage]) -> dict:
+    """
+    从对话历史中提取用户已有资源信息
+    
+    Returns:
+        dict: 包含用户努力过什么、有谁支持过他等信息，如果没有则返回None
+    """
+    resources = {
+        "efforts": [],  # 用户努力过什么
+        "supporters": [],  # 有谁支持过他
+    }
+    
+    # 合并所有用户消息内容
+    user_messages = [msg.content.lower() for msg in messages if msg.role == "user"]
+    if not user_messages:
+        return None
+    
+    full_text = " ".join(user_messages)
+    
+    # 提取用户努力过的内容
+    import re
+    effort_patterns = [
+        r"我(?:试过|做过|努力|尝试|用过|试了|努力过)(.{0,50})",
+        r"曾经(?:试过|做过|努力|尝试|用过)(.{0,50})",
+        r"之前(?:试过|做过|努力|尝试|用过)(.{0,50})",
+    ]
+    
+    for pattern in effort_patterns:
+        matches = re.findall(pattern, full_text)
+        for match in matches:
+            effort = match.strip()
+            if effort and len(effort) > 2 and effort not in resources["efforts"]:
+                resources["efforts"].append(effort[:100])  # 限制长度
+    
+    # 提取支持者信息
+    supporter_patterns = [
+        r"(?:朋友|家人|父母|老师|同学|同事)(.{0,30})",
+        r"有(?:朋友|家人|父母|老师|同学|同事)(.{0,30})",
+        r"(?:朋友|家人|父母|老师|同学|同事)(?:支持|帮助|陪伴)(.{0,30})",
+    ]
+    
+    for pattern in supporter_patterns:
+        matches = re.findall(pattern, full_text)
+        for match in matches:
+            supporter = match.strip()
+            if supporter and len(supporter) > 1 and supporter not in resources["supporters"]:
+                resources["supporters"].append(supporter[:100])  # 限制长度
+    
+    # 如果没有提取到具体内容，但有关键词，也记录
+    effort_keywords = ["试过", "做过", "努力", "尝试", "用过", "试了", "努力过"]
+    supporter_keywords = ["朋友", "家人", "父母", "老师", "同学", "同事"]
+    
+    if not resources["efforts"] and any(kw in full_text for kw in effort_keywords):
+        resources["efforts"] = ["用户提到尝试过一些方法"]
+    if not resources["supporters"] and any(kw in full_text for kw in supporter_keywords):
+        resources["supporters"] = ["用户提到有支持者"]
+    
+    # 如果没有任何资源信息，返回None
+    if not resources["efforts"] and not resources["supporters"]:
+        return None
+    
+    return resources
+
+
 def select_style(user_profile: UserProfile, parsed: ParsedState) -> StyleProfile:
     """
     根据用户配置和当前状态选择风格
@@ -384,14 +448,18 @@ def determine_conversation_stage(
     
     elif current_stage == "exploring":
         # 探索阶段：2-4轮，收集足够信息后进入小结
-        if turn_count >= 4:  # 至少4轮对话后进入小结
-            # 直接进入邀请阶段（跳过summarizing，因为小结可以在邀请阶段一起完成）
-            return "inviting", True
+        if turn_count >= 4:  # 至少4轮对话后进入小结阶段
+            return "summarizing", False
         return "exploring", False
     
     elif current_stage == "summarizing":
-        # 小结后进入邀请阶段
-        return "inviting", True
+        # 小结阶段：用户回复后，根据是否校正进入邀请阶段
+        # 如果用户回复表示确认或校正，进入邀请阶段
+        # 这里通过检查用户消息来判断（简单实现：如果用户消息较短且包含确认词，认为已校正）
+        if turn_count > conversation_state.turnCount:
+            # 用户已回复，进入邀请阶段
+            return "inviting", True
+        return "summarizing", False
     
     elif current_stage == "inviting":
         # 邀请阶段保持，直到用户点击按钮
@@ -524,7 +592,8 @@ def generate_reply_with_algorithm(
             parsed=parsed,
             style=style,
             plan=plan,
-            interventions=interventions
+            interventions=interventions,
+            conversation_stage=stage
         )
     
     # 8.5. 根据阶段调整回复内容（如果需要）
@@ -560,6 +629,30 @@ def generate_reply_with_algorithm(
     updated_state.structuredInfo["topic"] = parsed.scene
     updated_state.structuredInfo["trigger"] = user_message.content[:200]  # 触发事件摘要
     updated_state.structuredInfo["need"] = parsed.userGoal
+    
+    # 提取resources信息（用户已有资源，比如努力过什么、有谁支持过他）
+    resources = extract_resources_from_conversation(messages)
+    if resources:
+        updated_state.structuredInfo["resources"] = resources
+    
+    # 在summarizing阶段，如果用户回复了校正信息，更新结构化信息
+    # 注意：这里stage是当前阶段，如果上一轮是summarizing且用户现在回复了，stage应该是inviting
+    # 所以我们需要检查上一轮的状态
+    previous_stage = conversation_state.conversationStage if conversation_state else None
+    if previous_stage == "summarizing" and stage == "inviting":
+        # 上一轮是summarizing，现在进入inviting，说明用户已经回复了
+        # 检查用户回复是否包含校正信息
+        correction_keywords = ["不对", "不是", "漏了", "还有", "其实", "应该是", "更准确", "更贴切", "纠正", "补充"]
+        if any(kw in user_message.content for kw in correction_keywords):
+            # 用户提供了校正，重新解析用户消息以更新结构化信息
+            corrected_parsed = parse_user_message(user_message, history=messages[:-1])
+            if corrected_parsed.emotions:
+                updated_state.structuredInfo["emotion_primary"] = corrected_parsed.emotions[0]
+            updated_state.structuredInfo["emotion_intensity"] = corrected_parsed.intensity
+            if corrected_parsed.scene != "general":
+                updated_state.structuredInfo["topic"] = corrected_parsed.scene
+            if corrected_parsed.userGoal:
+                updated_state.structuredInfo["need"] = corrected_parsed.userGoal
     
     return llm_result, updated_state
 

@@ -81,8 +81,9 @@ class JsonChatLLMProvider(LLMProvider):
         style: StyleProfile,
         plan: ReplyPlan,
         interventions: List[InterventionConfig],
+        conversation_stage: Optional[Literal["chatting", "exploring", "summarizing", "inviting", "card_generated"]] = None,
     ) -> LLMResult:
-        system_prompt = self._build_structured_system_prompt(parsed, style, plan, interventions)
+        system_prompt = self._build_structured_system_prompt(parsed, style, plan, interventions, conversation_stage)
         chat_messages = self._format_messages(system_prompt, messages)
 
         try:
@@ -579,7 +580,48 @@ class JsonChatLLMProvider(LLMProvider):
         style: StyleProfile,
         plan: ReplyPlan,
         interventions: List[InterventionConfig],
+        conversation_stage: Optional[Literal["chatting", "exploring", "summarizing", "inviting", "card_generated"]] = None,
     ) -> str:
+        # 根据对话阶段生成针对性的提示词
+        stage_specific_instruction = ""
+        if conversation_stage == "chatting":
+            stage_specific_instruction = """
+【当前阶段：普通陪聊（阶段1）】
+你的任务是：
+- 用简短共情开场，表达理解和关心
+- 提一个轻一点的开放问题，引导用户分享
+- 例如："今天最让你不舒服的一件事是什么"、"最近让你印象最深的事情是哪一件"
+- 保持轻松、温和的语气，不要过于深入
+- 回复长度控制在200-400字左右
+"""
+        elif conversation_stage == "exploring":
+            stage_specific_instruction = """
+【当前阶段：情绪与事件探索（阶段2）】
+你的任务是：
+- 提探索性问题，深入了解用户的情绪和事件细节
+- 例如："如果用一个词形容你现在的心情，你会选哪个"、"这件事里最让你难受的那个瞬间是什么"、"你觉得最委屈或最无力的地方是哪里"
+- 通过提问帮助用户更清晰地表达自己的感受
+- 回复长度控制在300-500字左右
+"""
+        elif conversation_stage == "summarizing":
+            stage_specific_instruction = """
+【当前阶段：小结与校准（阶段3）】
+你的任务是：
+- 生成一段简短总结，概括用户刚才分享的核心内容
+- 例如："今天困扰你的主要是……"、"从刚才的对话中，我理解到……"
+- 邀请用户校正，例如："这些有说到你心里吗"、"有没有哪里我理解得不对，或者漏掉了什么"
+- 等待用户确认或纠正，根据用户的反馈更新理解
+- 回复长度控制在200-300字左右
+"""
+        elif conversation_stage == "inviting":
+            stage_specific_instruction = """
+【当前阶段：邀请生成关心卡（阶段4）】
+你的任务是：
+- 在回复末尾添加邀请文案："我可以基于刚刚的聊天帮你做一张今天的关心卡"
+- 说明卡片内容："里面会有我听见的重点、一点温柔但不虚的分析，以及一些你现在就能尝试的小行动"
+- 保持温和、鼓励的语气
+"""
+        
         tone_desc = {
             "gentle": "温和、柔和",
             "neutral": "中性、冷静",
@@ -649,7 +691,7 @@ class JsonChatLLMProvider(LLMProvider):
             steps_text = "\n".join(steps_desc)
             
             return f"""你是一个情绪陪伴 AI，受过基础心理学训练，但不是医生，不进行诊断或治疗。
-
+{stage_specific_instruction}
 你的目标是：按照5步骤系统，从5个层面来回应用户。
 
 重要要求：
@@ -728,7 +770,7 @@ class JsonChatLLMProvider(LLMProvider):
             structure_text = " → ".join([parts_desc.get(p, p) for p in plan.structure.get("parts", [])])
 
             return f"""你是一个情绪陪伴 AI，受过基础心理学训练，但不是医生，不进行诊断或治疗。
-
+{stage_specific_instruction}
 你的目标是：接住用户情绪，帮助澄清问题，并给出小而可行的建议。
 
 重要要求：

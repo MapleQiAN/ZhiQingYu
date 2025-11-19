@@ -49,6 +49,7 @@ class LLMProvider(ABC):
         style: StyleProfile,
         plan: ReplyPlan,
         interventions: list[InterventionConfig],
+        conversation_stage: Optional[Literal["chatting", "exploring", "summarizing", "inviting", "card_generated"]] = None,
     ) -> LLMResult:
         """
         生成结构化回复（支持风格系统和三段式结构）
@@ -59,6 +60,7 @@ class LLMProvider(ABC):
             style: 当前风格
             plan: 回复规划
             interventions: 干预模块列表
+            conversation_stage: 当前对话阶段（可选，用于生成针对性提示词）
             
         Returns:
             LLMResult: 包含回复、情绪分析等信息
@@ -110,6 +112,7 @@ class MockLLMProvider(LLMProvider):
         style: StyleProfile,
         plan: ReplyPlan,
         interventions: list[InterventionConfig],
+        conversation_stage: Optional[Literal["chatting", "exploring", "summarizing", "inviting", "card_generated"]] = None,
     ) -> LLMResult:
         """Mock结构化回复生成"""
         # 使用旧的 generate_reply 作为后备
