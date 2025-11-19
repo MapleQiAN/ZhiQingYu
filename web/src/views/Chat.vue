@@ -257,12 +257,35 @@
       </div>
     </div>
   </Teleport>
+  
+  <!-- 模板选择对话框 -->
+  <n-modal
+    v-model:show="templateSelectVisible"
+    preset="dialog"
+    title="选择导出模板"
+    positive-text="导出"
+    negative-text="取消"
+    @positive-click="handleTemplateExport"
+    @negative-click="templateSelectVisible = false"
+  >
+    <div class="template-select-grid">
+      <div
+        v-for="option in templateOptions"
+        :key="option.value"
+        :class="['template-option', { active: exportTemplateSelection === option.value }]"
+        @click="exportTemplateSelection = option.value"
+      >
+        <div class="template-icon">{{ option.icon }}</div>
+        <div class="template-label">{{ option.label }}</div>
+      </div>
+    </div>
+  </n-modal>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NCard, NInput, NButton, NAlert, NSelect, useMessage, useDialog } from 'naive-ui'
+import { NCard, NInput, NButton, NAlert, NSelect, NModal, useMessage, useDialog } from 'naive-ui'
 import {
   sendChatMessage,
   getSessions,
@@ -273,7 +296,7 @@ import {
   type CardData,
 } from '@/lib/api'
 import HeartCard from '@/components/HeartCard.vue'
-import { generateCardHtml } from '@/lib/cardExport'
+import { generateCardHtml, type CardTemplate } from '@/lib/cardExport'
 
 const { t } = useI18n()
 const message = useMessage()
@@ -296,6 +319,8 @@ const cardFullscreenVisible = ref(false)
 const fullscreenCardData = ref<CardData | null>(null)
 const FULLSCREEN_BODY_CLASS = 'card-fullscreen-active'
 let previousBodyOverflow = ''
+const templateSelectVisible = ref(false)
+const currentExportCardData = ref<CardData | null>(null)
 
 // 体验模式选项（使用computed确保国际化文本正确更新）
 const experienceModes = computed(() => [
@@ -598,13 +623,38 @@ const sanitizeFileName = (value: string) => {
   return value.replace(/[\\/:*?"<>|]/g, '_')
 }
 
+// 模板选项
+const templateOptions = [
+  { label: '基础模板', value: 'basic' as CardTemplate, icon: '📄' },
+  { label: '星空漫游模板', value: 'starry' as CardTemplate, icon: '⭐' },
+  { label: '蓝海前行模板', value: 'ocean' as CardTemplate, icon: '🌊' },
+  { label: '中国古风模板', value: 'ancient' as CardTemplate, icon: '🏮' },
+  { label: '科幻未来模板', value: 'sci-fi' as CardTemplate, icon: '🚀' },
+  { label: '想象糖果棉花城模板', value: 'candy' as CardTemplate, icon: '🍬' },
+]
+
+// 用于存储当前对话框选中的模板
+const exportTemplateSelection = ref<CardTemplate>('basic')
+
 const handleExportCard = (cardData?: CardData | null) => {
   if (!cardData) return
+  
+  // 保存要导出的卡片数据
+  currentExportCardData.value = cardData
+  // 重置选中的模板
+  exportTemplateSelection.value = 'basic'
+  // 显示模板选择对话框
+  templateSelectVisible.value = true
+}
+
+const handleTemplateExport = () => {
+  if (!currentExportCardData.value) return false
+  
   try {
-    const html = generateCardHtml(cardData)
+    const html = generateCardHtml(currentExportCardData.value, exportTemplateSelection.value)
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
     const url = URL.createObjectURL(blob)
-    const title = sanitizeFileName(cardData.theme?.trim() || t('chat.cardTitle'))
+    const title = sanitizeFileName(currentExportCardData.value.theme?.trim() || t('chat.cardTitle'))
     const date = new Date().toISOString().split('T')[0]
     const link = document.createElement('a')
     link.href = url
@@ -614,9 +664,13 @@ const handleExportCard = (cardData?: CardData | null) => {
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
     message.success(t('chat.exportSuccess'))
+    templateSelectVisible.value = false
+    currentExportCardData.value = null
+    return true
   } catch (error) {
     console.error(error)
     message.error(t('chat.exportFailed'))
+    return false
   }
 }
 
@@ -1527,6 +1581,48 @@ onUnmounted(() => {
   padding: var(--spacing-2xl) var(--spacing-xl);
   border-radius: var(--radius-2xl);
   box-sizing: border-box;
+}
+
+.template-select-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 16px 0;
+  min-width: 500px;
+}
+
+.template-option {
+  padding: 20px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  cursor: pointer;
+  background-color: #fff;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.template-option:hover {
+  border-color: #18a058;
+  background-color: #f0f9ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(24, 160, 88, 0.15);
+}
+
+.template-option.active {
+  border-color: #18a058;
+  background-color: #f0f9ff;
+  box-shadow: 0 2px 8px rgba(24, 160, 88, 0.2);
+}
+
+.template-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.template-label {
+  font-weight: 500;
+  font-size: 14px;
+  color: #333;
 }
 
 .loading-bubble {
