@@ -21,6 +21,8 @@ class LLMResult(BaseModel):
     prompt_tokens: Optional[int] = None  # 输入tokens数
     completion_tokens: Optional[int] = None  # 输出tokens数
     total_tokens: Optional[int] = None  # 总tokens数
+    # 多阶段对话流程控制
+    should_show_card_button: bool = False  # 是否显示"开始关心吧！"按钮
 
 
 class LLMProvider(ABC):

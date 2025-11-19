@@ -340,6 +340,66 @@ def plan_reply(style: StyleProfile, parsed: ParsedState, interventions: list[Int
     )
 
 
+def determine_conversation_stage(
+    conversation_state: ConversationState | None,
+    turn_count: int,
+    parsed: ParsedState,
+    messages: list[ChatMessage]
+) -> tuple[str, bool]:
+    """
+    确定当前对话阶段和是否应该显示"开始关心吧！"按钮
+    
+    阶段流程：
+    1. chatting: 普通陪聊（0-1轮）
+    2. exploring: 情绪与事件探索（2-4轮）
+    3. summarizing: 小结与校准（1轮）
+    4. inviting: 邀请生成关心卡（显示按钮）
+    5. card_generated: 已生成卡片
+    
+    Returns:
+        (stage, should_show_button): 当前阶段和是否显示按钮
+    """
+    if not conversation_state:
+        # 新对话，从chatting开始
+        if turn_count == 0:
+            return "chatting", False
+        else:
+            return "exploring", False
+    
+    current_stage = conversation_state.conversationStage
+    
+    # 如果已经生成卡片，保持card_generated状态
+    if current_stage == "card_generated":
+        return "card_generated", False
+    
+    # 如果高风险，不进入邀请阶段
+    if parsed.riskLevel == "high":
+        return current_stage, False
+    
+    # 根据轮数和阶段判断
+    if current_stage == "chatting":
+        if turn_count >= 1:
+            return "exploring", False
+        return "chatting", False
+    
+    elif current_stage == "exploring":
+        # 探索阶段：2-4轮，收集足够信息后进入小结
+        if turn_count >= 4:  # 至少4轮对话后进入小结
+            # 直接进入邀请阶段（跳过summarizing，因为小结可以在邀请阶段一起完成）
+            return "inviting", True
+        return "exploring", False
+    
+    elif current_stage == "summarizing":
+        # 小结后进入邀请阶段
+        return "inviting", True
+    
+    elif current_stage == "inviting":
+        # 邀请阶段保持，直到用户点击按钮
+        return "inviting", True
+    
+    return current_stage, False
+
+
 def generate_reply_with_algorithm(
     llm_provider: LLMProvider,
     messages: list[ChatMessage],
@@ -348,7 +408,7 @@ def generate_reply_with_algorithm(
     chat_mode: str | None = None,
 ) -> tuple[LLMResult, ConversationState]:
     """
-    使用对话算法生成回复（增强版：支持5步骤系统）
+    使用对话算法生成回复（增强版：支持5步骤系统和多阶段对话流程）
     
     完整流程（符合文档要求）：
     1. 接收用户输入，更新对话上下文
@@ -359,7 +419,7 @@ def generate_reply_with_algorithm(
     6. 针对选定的步骤，规划本轮回复内容
     7. 在生成之前或之后，进行安全与质量检查
     8. 输出给用户
-    9. 更新对话状态
+    9. 更新对话状态（包括多阶段流程状态）
     
     Returns:
         (LLMResult, ConversationState): 回复结果和更新后的对话状态
@@ -385,6 +445,20 @@ def generate_reply_with_algorithm(
     
     # 3. 执行情绪解析与风险检测
     parsed = parse_user_message(user_message, history=messages[:-1] if len(messages) > 1 else [])
+    
+    # 3.5. 更新对话轮数和阶段
+    if not conversation_state:
+        conversation_state = ConversationState()
+    conversation_state.turnCount = len([m for m in messages if m.role == "user"])
+    
+    # 确定当前阶段和是否显示按钮
+    stage, should_show_button = determine_conversation_stage(
+        conversation_state,
+        conversation_state.turnCount,
+        parsed,
+        messages
+    )
+    conversation_state.conversationStage = stage
     
     # 4. 根据风险程度、用户偏好与场景，选择当前风格
     # 高风险时强制使用crisis_safe风格
@@ -453,6 +527,15 @@ def generate_reply_with_algorithm(
             interventions=interventions
         )
     
+    # 8.5. 根据阶段调整回复内容（如果需要）
+    if stage == "inviting":
+        # 在邀请阶段，在回复末尾添加邀请文案
+        if not llm_result.reply.endswith("我可以基于刚刚的聊天帮你做一张今天的关心卡"):
+            llm_result.reply += "\n\n我可以基于刚刚的聊天帮你做一张今天的关心卡，里面会有我听见的重点、一点温柔但不虚的分析，以及一些你现在就能尝试的小行动。"
+    
+    # 设置是否显示按钮
+    llm_result.should_show_card_button = should_show_button
+    
     # 9. 更新对话状态
     updated_state = step_controller.update_conversation_state(
         conversation_state=conversation_state,
@@ -461,6 +544,22 @@ def generate_reply_with_algorithm(
         experience_mode=experience_mode,
         step_content=plan.stepContents
     )
+    
+    # 更新多阶段流程状态
+    updated_state.conversationStage = stage
+    updated_state.turnCount = conversation_state.turnCount
+    
+    # 收集结构化信息（用于后续生成关心卡）
+    if not updated_state.structuredInfo:
+        updated_state.structuredInfo = {}
+    
+    # 更新结构化信息
+    if parsed.emotions:
+        updated_state.structuredInfo["emotion_primary"] = parsed.emotions[0]
+    updated_state.structuredInfo["emotion_intensity"] = parsed.intensity
+    updated_state.structuredInfo["topic"] = parsed.scene
+    updated_state.structuredInfo["trigger"] = user_message.content[:200]  # 触发事件摘要
+    updated_state.structuredInfo["need"] = parsed.userGoal
     
     return llm_result, updated_state
 

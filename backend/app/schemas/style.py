@@ -52,6 +52,10 @@ class ConversationState(BaseModel):
     completedSteps: list[int] = []  # 已完成的步骤列表
     stepHistory: list[dict] = []  # 步骤历史记录（用于Step 5的回顾）
     problemContext: Optional[dict] = None  # 问题上下文（用于多轮对话中保持信息）
+    # 多阶段对话流程控制
+    conversationStage: Literal["chatting", "exploring", "summarizing", "inviting", "card_generated"] = "chatting"  # 对话阶段
+    turnCount: int = 0  # 对话轮数
+    structuredInfo: Optional[dict] = None  # 结构化信息收集（emotion_primary, topic, trigger, need, resources等）
 
 
 class ReplyPlan(BaseModel):
