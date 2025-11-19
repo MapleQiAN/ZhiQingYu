@@ -626,6 +626,8 @@ def generate_reply_with_algorithm(
             interventions=[],
             conversation_stage=stage
         )
+        # 引导阶段不生成卡片数据，确保card_data为None
+        llm_result.card_data = None
         # 设置步骤为空，因为引导阶段不执行5步生成
         steps_to_execute = []
         mode = "guiding"

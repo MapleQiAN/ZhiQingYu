@@ -134,8 +134,9 @@
           <p class="message-content">{{ msg.content }}</p>
         </div>
         
-        <!-- AI回复：如果有卡片数据则显示卡片，否则显示普通气泡 -->
+        <!-- AI回复：如果有卡片数据则显示HeartCard，否则显示白色引导卡片 -->
         <div v-else>
+          <!-- 卡片生成阶段：有card_data时显示HeartCard -->
           <div v-if="msg.card_data && hasCardData(msg.card_data)" class="assistant-card-wrapper">
             <HeartCard :card-data="msg.card_data" class="assistant-card" />
             <div class="card-action-buttons">
@@ -163,14 +164,12 @@
               </n-button>
             </div>
           </div>
+          <!-- 引导阶段：没有card_data时显示白色引导卡片 -->
           <div
             v-else
-            :class="[
-              'message-bubble',
-              'assistant-bubble',
-            ]"
+            class="guiding-card"
           >
-            <p class="message-content">{{ msg.content }}</p>
+            <p class="guiding-card-content">{{ msg.content }}</p>
           </div>
         </div>
       </div>
@@ -196,6 +195,23 @@
         <n-alert type="warning" :title="$t('chat.riskWarning')" :show-icon="true">
           {{ $t('chat.riskWarningDesc') }}
         </n-alert>
+      </div>
+      
+      <!-- 开始关心按钮 -->
+      <div v-if="shouldShowCardButton && sessionId" class="card-button-wrapper">
+        <n-button
+          type="primary"
+          size="large"
+          :loading="loading"
+          @click="handleGenerateCard"
+          class="generate-card-button"
+          block
+        >
+          <template #icon>
+            <span>💝</span>
+          </template>
+          {{ $t('chat.startCaring') || '开始关心吧！' }}
+        </n-button>
       </div>
       
       <div class="input-wrapper">
@@ -293,6 +309,7 @@ import {
   getSessions,
   getSessionMessages,
   deleteSession,
+  generateCard,
   type ChatMessage,
   type SessionItem,
   type CardData,
@@ -323,6 +340,7 @@ const FULLSCREEN_BODY_CLASS = 'card-fullscreen-active'
 let previousBodyOverflow = ''
 const templateSelectVisible = ref(false)
 const currentExportCardData = ref<CardData | null>(null)
+const shouldShowCardButton = ref(false)
 
 // 体验模式选项（使用computed确保国际化文本正确更新）
 const experienceModes = computed(() => [
@@ -414,6 +432,9 @@ const handleSwitchSession = async (id: string) => {
       selectedExperienceMode.value = null // 重置体验模式
       selectedAIStyle.value = null // 重置AI风格
       selectedChatMode.value = 'deep' // 重置聊天模式
+      // 检查最后一条assistant消息是否应该显示按钮
+      const lastAssistantMsg = [...response.data.messages].reverse().find(msg => msg.role === 'assistant')
+      shouldShowCardButton.value = lastAssistantMsg?.should_show_card_button || false
       scrollToBottom()
     }
   } catch (error) {
@@ -434,6 +455,7 @@ const handleNewChat = () => {
   selectedAIStyle.value = null
   selectedChatMode.value = 'deep'
   lastRiskLevel.value = 'normal'
+  shouldShowCardButton.value = false
 }
 
 // 删除会话
@@ -566,9 +588,13 @@ const handleSend = async () => {
         role: 'assistant',
         content: data.reply,
         card_data: data.card_data || null,
+        should_show_card_button: data.should_show_card_button || false,
       }
 
       messages.value = [...newMessages, assistantMessage]
+      
+      // 更新是否显示"开始关心"按钮的状态
+      shouldShowCardButton.value = data.should_show_card_button || false
       scrollToBottom()
       // 刷新会话列表
       loadSessions()
@@ -592,6 +618,54 @@ const handleKeyPress = (e: KeyboardEvent) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
     handleSend()
+  }
+}
+
+// 处理生成卡片按钮点击
+const handleGenerateCard = async () => {
+  if (!sessionId.value) {
+    message.error(t('chat.noSession') || '没有会话ID')
+    return
+  }
+
+  loading.value = true
+  try {
+    const response = await generateCard(sessionId.value)
+
+    if (response.error) {
+      console.error('Generate Card Error:', response.error)
+      message.error(`${t('common.error')}: ${response.error.message}`)
+      return
+    }
+
+    if (response.data) {
+      const data = response.data
+      todayEmotion.value = data.emotion
+      lastRiskLevel.value = data.risk_level
+
+      const assistantMessage: ChatMessage = {
+        role: 'assistant',
+        content: data.reply,
+        card_data: data.card_data || null,
+        should_show_card_button: false, // 生成卡片后不再显示按钮
+      }
+
+      messages.value = [...messages.value, assistantMessage]
+      shouldShowCardButton.value = false // 隐藏按钮
+      scrollToBottom()
+      // 刷新会话列表
+      loadSessions()
+      
+      // 如果检测到高风险，显示额外提示
+      if (data.risk_level === 'high') {
+        message.warning(t('chat.highRiskDetected'))
+      }
+    }
+  } catch (error) {
+    console.error('Generate Card failed:', error)
+    message.error(t('chat.generateCardFailed') || '生成卡片失败')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -1512,6 +1586,49 @@ onUnmounted(() => {
   position: relative;
 }
 
+/* 引导阶段的白色卡片样式 */
+.guiding-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-2xl);
+  padding: var(--spacing-xl);
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  max-width: 100%;
+}
+
+.guiding-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle,
+    rgba(232, 180, 184, 0.05) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.guiding-card-content {
+  margin: 0;
+  line-height: 1.8;
+  font-size: var(--font-size-base);
+  white-space: pre-wrap;
+  word-break: break-word;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+  position: relative;
+  z-index: 1;
+}
+
 .card-action-buttons {
   position: absolute;
   top: var(--spacing-sm);
@@ -1724,6 +1841,24 @@ onUnmounted(() => {
 .risk-warning {
   margin-bottom: var(--spacing-md);
   animation: slideDown 0.3s ease;
+}
+
+.card-button-wrapper {
+  margin-bottom: var(--spacing-md);
+  animation: slideDown 0.3s ease;
+}
+
+.generate-card-button {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%) !important;
+  border: none !important;
+  font-weight: var(--font-weight-semibold);
+  transition: all var(--transition-base);
+  box-shadow: 0 4px 12px rgba(232, 180, 184, 0.3);
+}
+
+.generate-card-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(232, 180, 184, 0.4);
 }
 
 @keyframes slideDown {
