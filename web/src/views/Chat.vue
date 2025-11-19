@@ -244,34 +244,37 @@
     </div>
   </div>
   <Teleport to="body">
-    <div
-      v-if="cardFullscreenVisible && fullscreenCardData"
-      class="card-fullscreen-overlay"
-      @click.self="closeCardFullscreen"
-    >
-      <div class="card-fullscreen-content">
-        <n-button quaternary circle size="large" class="card-fullscreen-close" @click="closeCardFullscreen">
-          <template #icon>
-            <span>✕</span>
-          </template>
-        </n-button>
-        <n-button
-          tertiary
-          circle
-          size="large"
-          class="card-fullscreen-export"
-          @click="handleExportCard(fullscreenCardData)"
-        >
-          <template #icon>
-            <span>⇩</span>
-          </template>
-        </n-button>
-        <HeartCard
-          :card-data="fullscreenCardData"
-          class="heart-card-fullscreen"
-        />
+    <Transition name="fade">
+      <div
+        v-if="cardFullscreenVisible && fullscreenCardData"
+        class="card-fullscreen-overlay"
+        @click.self="closeCardFullscreen"
+      >
+        <div class="card-fullscreen-content" @click.stop>
+          <n-button quaternary circle size="large" class="card-fullscreen-close" @click="closeCardFullscreen">
+            <template #icon>
+              <span>✕</span>
+            </template>
+          </n-button>
+          <n-button
+            tertiary
+            circle
+            size="large"
+            class="card-fullscreen-export"
+            @click="handleExportCard(fullscreenCardData)"
+          >
+            <template #icon>
+              <span>⇩</span>
+            </template>
+          </n-button>
+          <HeartCard
+            v-if="fullscreenCardData"
+            :card-data="fullscreenCardData"
+            class="heart-card-fullscreen"
+          />
+        </div>
       </div>
-    </div>
+    </Transition>
   </Teleport>
   
   <!-- 模板选择对话框 - 已隐藏，供将来恢复时使用 -->
@@ -680,12 +683,20 @@ const getEmotionLabel = (emotion: string | null) => {
 }
 
 const openCardFullscreen = (cardData: CardData | null | undefined) => {
-  if (!cardData) return
+  if (!cardData) {
+    console.warn('openCardFullscreen: cardData is null or undefined')
+    return
+  }
+  console.log('Opening fullscreen with card data:', cardData)
   fullscreenCardData.value = cardData
   cardFullscreenVisible.value = true
   previousBodyOverflow = document.body.style.overflow
   document.body.style.overflow = 'hidden'
   document.body.classList.add(FULLSCREEN_BODY_CLASS)
+  // 确保 DOM 更新
+  nextTick(() => {
+    console.log('Fullscreen opened, visible:', cardFullscreenVisible.value, 'data:', fullscreenCardData.value)
+  })
 }
 
 const closeCardFullscreen = () => {
@@ -1658,71 +1669,6 @@ onUnmounted(() => {
   border: 1px solid rgba(232, 180, 184, 0.2) !important;
 }
 
-:global(.card-fullscreen-overlay) {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(8, 2, 12, 0.75);
-  backdrop-filter: blur(16px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-lg);
-  z-index: 9999;
-  overflow: auto;
-}
-
-:global(.card-fullscreen-content) {
-  position: relative;
-  width: min(1200px, calc(100vw - 48px));
-  height: min(96vh, calc(100vh - 48px));
-  max-height: calc(100vh - 48px);
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-  padding: clamp(var(--spacing-lg), 3vw, var(--spacing-2xl));
-  border-radius: var(--radius-3xl);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 245, 247, 1));
-  border: var(--border-width-thin) solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-:global(.card-fullscreen-close) {
-  position: absolute;
-  top: var(--spacing-lg);
-  right: var(--spacing-lg);
-  background: rgba(255, 255, 255, 0.8) !important;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1) !important;
-  z-index: 2;
-}
-
-:global(.card-fullscreen-export) {
-  position: absolute;
-  top: var(--spacing-lg);
-  right: calc(var(--spacing-lg) + 52px);
-  background: rgba(255, 255, 255, 0.9) !important;
-  box-shadow: 0 6px 18px rgba(232, 180, 184, 0.2) !important;
-  color: var(--color-primary-dark) !important;
-  z-index: 2;
-}
-
-:global(.heart-card-fullscreen) {
-  width: 100%;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: var(--spacing-2xl) var(--spacing-xl);
-  border-radius: var(--radius-2xl);
-  box-sizing: border-box;
-}
-
 .template-select-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -2302,6 +2248,88 @@ onUnmounted(() => {
   to {
     opacity: 1;
   }
+}
+</style>
+
+<style>
+/* 全屏样式 - 非 scoped，因为使用 Teleport 渲染到 body */
+.card-fullscreen-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(8, 2, 12, 0.85) !important;
+  backdrop-filter: blur(16px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px !important;
+  z-index: 99999 !important;
+  overflow: auto !important;
+  margin: 0 !important;
+  pointer-events: auto !important;
+}
+
+.card-fullscreen-content {
+  position: relative !important;
+  width: min(1200px, calc(100vw - 48px)) !important;
+  height: min(96vh, calc(100vh - 48px)) !important;
+  max-height: calc(100vh - 48px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  padding: clamp(24px, 3vw, 48px) !important;
+  border-radius: 32px !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 245, 247, 1)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25) !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+}
+
+.card-fullscreen-close {
+  position: absolute !important;
+  top: 24px !important;
+  right: 24px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15) !important;
+  z-index: 10 !important;
+}
+
+.card-fullscreen-export {
+  position: absolute !important;
+  top: 24px !important;
+  right: 88px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 6px 18px rgba(232, 180, 184, 0.25) !important;
+  color: #d9598c !important;
+  z-index: 10 !important;
+}
+
+.heart-card-fullscreen {
+  width: 100% !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  padding: 48px 32px !important;
+  border-radius: 24px !important;
+  box-sizing: border-box !important;
+}
+
+/* 过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
 
