@@ -38,6 +38,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   card_data?: CardData | null
+  should_show_card_button?: boolean  // 是否显示"开始关心吧！"按钮
 }
 
 export interface ChatRequest {
@@ -56,6 +57,7 @@ export interface ChatResponse {
   topics: string[]
   risk_level: 'normal' | 'high'  // 后端返回的是normal/high，但内部可能是low/medium/high
   card_data?: CardData | null
+  should_show_card_button?: boolean  // 是否显示"开始关心吧！"按钮
 }
 
 export interface DailySummaryItem {
@@ -154,6 +156,16 @@ export async function deleteSession(
 ): Promise<ApiResponse<{ success: boolean; message: string }>> {
   const response = await api.delete<ApiResponse<{ success: boolean; message: string }>>(
     `/sessions/${sessionId}`
+  )
+  return response.data
+}
+
+// 生成关心卡
+export async function generateCard(
+  sessionId: string
+): Promise<ApiResponse<ChatResponse>> {
+  const response = await api.post<ApiResponse<ChatResponse>>(
+    `/sessions/${sessionId}/generate-card`
   )
   return response.data
 }

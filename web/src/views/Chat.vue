@@ -227,33 +227,36 @@
     </n-card>
     </div>
   </div>
-  <div
-    v-if="cardFullscreenVisible && fullscreenCardData"
-    class="card-fullscreen-overlay"
-  >
-    <div class="card-fullscreen-content">
-      <n-button quaternary circle size="large" class="card-fullscreen-close" @click="closeCardFullscreen">
-        <template #icon>
-          <span>✕</span>
-        </template>
-      </n-button>
-      <n-button
-        tertiary
-        circle
-        size="large"
-        class="card-fullscreen-export"
-        @click="handleExportCard(fullscreenCardData)"
-      >
-        <template #icon>
-          <span>⇩</span>
-        </template>
-      </n-button>
-      <HeartCard
-        :card-data="fullscreenCardData"
-        class="heart-card-fullscreen"
-      />
+  <Teleport to="body">
+    <div
+      v-if="cardFullscreenVisible && fullscreenCardData"
+      class="card-fullscreen-overlay"
+      @click.self="closeCardFullscreen"
+    >
+      <div class="card-fullscreen-content">
+        <n-button quaternary circle size="large" class="card-fullscreen-close" @click="closeCardFullscreen">
+          <template #icon>
+            <span>✕</span>
+          </template>
+        </n-button>
+        <n-button
+          tertiary
+          circle
+          size="large"
+          class="card-fullscreen-export"
+          @click="handleExportCard(fullscreenCardData)"
+        >
+          <template #icon>
+            <span>⇩</span>
+          </template>
+        </n-button>
+        <HeartCard
+          :card-data="fullscreenCardData"
+          class="heart-card-fullscreen"
+        />
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -1461,34 +1464,43 @@ onUnmounted(() => {
   border: 1px solid rgba(232, 180, 184, 0.2) !important;
 }
 
-.card-fullscreen-overlay {
+:global(.card-fullscreen-overlay) {
   position: fixed;
-  inset: 0;
-  background: rgba(8, 2, 12, 0.55);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(8, 2, 12, 0.75);
   backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--spacing-lg);
-  z-index: 4000;
+  z-index: 9999;
+  overflow: auto;
 }
 
-.card-fullscreen-content {
+:global(.card-fullscreen-content) {
   position: relative;
   width: min(1200px, calc(100vw - 48px));
   height: min(96vh, calc(100vh - 48px));
+  max-height: calc(100vh - 48px);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
   padding: clamp(var(--spacing-lg), 3vw, var(--spacing-2xl));
   border-radius: var(--radius-3xl);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 245, 247, 0.98));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 245, 247, 1));
   border: var(--border-width-thin) solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-.card-fullscreen-close {
+:global(.card-fullscreen-close) {
   position: absolute;
   top: var(--spacing-lg);
   right: var(--spacing-lg);
@@ -1497,7 +1509,7 @@ onUnmounted(() => {
   z-index: 2;
 }
 
-.card-fullscreen-export {
+:global(.card-fullscreen-export) {
   position: absolute;
   top: var(--spacing-lg);
   right: calc(var(--spacing-lg) + 52px);
@@ -1507,13 +1519,14 @@ onUnmounted(() => {
   z-index: 2;
 }
 
-.heart-card-fullscreen {
+:global(.heart-card-fullscreen) {
   width: 100%;
-  height: 100%;
-  max-height: none;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--spacing-2xl) var(--spacing-xl);
   border-radius: var(--radius-2xl);
+  box-sizing: border-box;
 }
 
 .loading-bubble {
