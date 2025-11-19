@@ -586,32 +586,35 @@ class JsonChatLLMProvider(LLMProvider):
         stage_specific_instruction = ""
         if conversation_stage == "chatting":
             stage_specific_instruction = """
-【当前阶段：普通陪聊（阶段1）】
+【当前阶段：普通陪聊（阶段1）- 快速引导】
 你的任务是：
-- 用简短共情开场，表达理解和关心
+- 用简短共情开场，表达理解和关心（1-2句话即可）
 - 提一个轻一点的开放问题，引导用户分享
 - 例如："今天最让你不舒服的一件事是什么"、"最近让你印象最深的事情是哪一件"
 - 保持轻松、温和的语气，不要过于深入
-- 回复长度控制在200-400字左右
+- 回复要简洁快速，控制在200-400字左右，重点是快速建立连接，不要长篇大论
+- 避免详细分析或深入探讨，这个阶段只需要简单引导
 """
         elif conversation_stage == "exploring":
             stage_specific_instruction = """
-【当前阶段：情绪与事件探索（阶段2）】
+【当前阶段：情绪与事件探索（阶段2）- 快速引导】
 你的任务是：
 - 提探索性问题，深入了解用户的情绪和事件细节
 - 例如："如果用一个词形容你现在的心情，你会选哪个"、"这件事里最让你难受的那个瞬间是什么"、"你觉得最委屈或最无力的地方是哪里"
 - 通过提问帮助用户更清晰地表达自己的感受
-- 回复长度控制在300-500字左右
+- 回复要简洁快速，控制在300-500字左右，重点是提问和简单共情，不要详细分析
+- 避免长篇解释或深入探讨，保持对话节奏，快速收集信息
 """
         elif conversation_stage == "summarizing":
             stage_specific_instruction = """
-【当前阶段：小结与校准（阶段3）】
+【当前阶段：小结与校准（阶段3）- 快速引导】
 你的任务是：
-- 生成一段简短总结，概括用户刚才分享的核心内容
+- 生成一段简短总结，概括用户刚才分享的核心内容（2-3句话即可）
 - 例如："今天困扰你的主要是……"、"从刚才的对话中，我理解到……"
 - 邀请用户校正，例如："这些有说到你心里吗"、"有没有哪里我理解得不对，或者漏掉了什么"
 - 等待用户确认或纠正，根据用户的反馈更新理解
-- 回复长度控制在200-300字左右
+- 回复要简洁快速，控制在200-300字左右，重点是快速总结和确认，不要详细展开
+- 避免长篇分析，保持简洁明了
 """
         elif conversation_stage == "inviting":
             stage_specific_instruction = """
@@ -657,6 +660,7 @@ class JsonChatLLMProvider(LLMProvider):
 
         if use_five_steps:
             # 5步骤模式：生成5步骤的card_data
+            # 注意：5步骤模式只在非引导阶段使用，所以这里总是要求详细回复
             steps_desc = []
             step_contents = getattr(plan, 'stepContents', {})
             
@@ -694,12 +698,13 @@ class JsonChatLLMProvider(LLMProvider):
 {stage_specific_instruction}
 你的目标是：按照5步骤系统，从5个层面来回应用户。
 
-重要要求：
+重要要求（5步骤生成 - 详细内容）：
 - 你的回复应该详细、丰富、有深度，不要过于简短
 - 每个步骤都要独立完整，单独作为一条回复时也能让用户获得实质性的帮助
 - 每个步骤的内容要充实，不能只是"下一步预告"
 - 可以包含具体的例子、场景描述、情感共鸣等内容
 - 让用户感受到被充分理解和关心
+- 每个步骤的内容应该足够详细，能够为用户提供实质性的帮助和洞察
 
 当前风格配置：
 - 语气: {tone_desc}
@@ -769,16 +774,35 @@ class JsonChatLLMProvider(LLMProvider):
             }
             structure_text = " → ".join([parts_desc.get(p, p) for p in plan.structure.get("parts", [])])
 
-            return f"""你是一个情绪陪伴 AI，受过基础心理学训练，但不是医生，不进行诊断或治疗。
-{stage_specific_instruction}
-你的目标是：接住用户情绪，帮助澄清问题，并给出小而可行的建议。
-
+            # 判断是否是引导阶段（需要简短回复）
+            is_guiding_phase = conversation_stage in ["chatting", "exploring", "summarizing"]
+            
+            # 根据阶段调整重要要求
+            if is_guiding_phase:
+                # 引导阶段：强调简短、快速生成
+                important_requirements = """
+重要要求（引导阶段 - 快速生成）：
+- 你的回复应该简洁、直接，不要过于冗长
+- 重点在于快速理解和简单引导，不需要深入分析
+- 回复要自然、流畅，保持对话的节奏感
+- 以提问和简短共情为主，避免长篇大论
+- 严格按照阶段要求控制字数（已在阶段说明中指定）
+"""
+            else:
+                # 非引导阶段：详细回复
+                important_requirements = """
 重要要求：
 - 你的回复应该详细、丰富、有深度，不要过于简短
 - 尽量提供充分的共情、理解和建议
 - 每部分内容都应该充实，情绪镜像部分至少500字，解释澄清部分至少500字，行动建议部分至少300字
 - 可以包含具体的例子、场景描述、情感共鸣等内容
 - 让用户感受到被充分理解和关心
+"""
+
+            return f"""你是一个情绪陪伴 AI，受过基础心理学训练，但不是医生，不进行诊断或治疗。
+{stage_specific_instruction}
+你的目标是：接住用户情绪，帮助澄清问题，并给出小而可行的建议。
+{important_requirements}
 
 当前风格配置：
 - 语气: {tone_desc}
