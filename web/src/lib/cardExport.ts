@@ -164,16 +164,17 @@ const getTemplateStyles = (template: CardTemplate): string => {
       }
       body {
         margin: 0;
-        padding: 48px 24px;
+        padding: 0;
         font-family: 'Source Han Serif SC', 'Noto Serif SC', 'Segoe UI', 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-        background: #ffeef8;
+        background: linear-gradient(120deg, #fffaf5, #ffeef0);
         min-height: 100vh;
-        position: relative;
-        overflow-x: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 24px;
       }
       .card-wrapper {
         width: min(860px, 100%);
-        margin: 0 auto;
         background: rgba(255, 255, 255, 0.95);
         border-radius: 28px;
         padding: 48px;
@@ -184,7 +185,33 @@ const getTemplateStyles = (template: CardTemplate): string => {
         border: 1px solid rgba(232, 180, 184, 0.3);
         position: relative;
         overflow: hidden;
+      }
+      .card-wrapper::before,
+      .card-wrapper::after {
+        content: '';
+        position: absolute;
+        width: 320px;
+        height: 320px;
+        background: radial-gradient(circle, rgba(255, 200, 200, 0.25), transparent 70%);
+        filter: blur(4px);
+        opacity: 0.7;
+      }
+      .card-wrapper::before {
+        top: -160px;
+        right: -80px;
+      }
+      .card-wrapper::after {
+        bottom: -120px;
+        left: -60px;
+        background: radial-gradient(circle, rgba(200, 220, 255, 0.25), transparent 70%);
+      }
+      .card-content {
+        position: relative;
         z-index: 1;
+      }
+      header {
+        text-align: center;
+        margin-bottom: 40px;
       }
       .card-theme {
         font-size: 2rem;
@@ -200,16 +227,9 @@ const getTemplateStyles = (template: CardTemplate): string => {
         color: rgba(194, 85, 107, 0.6);
         margin-bottom: 20px;
       }
-      .card-question {
-        font-size: 1.05rem;
-        line-height: 1.7;
-        color: rgba(0, 0, 0, 0.75);
-        margin-top: 20px;
-        padding: 16px 20px;
-        background: rgba(255, 255, 255, 0.6);
-        border-radius: 16px;
-        border-left: 3px solid rgba(194, 85, 107, 0.5);
-        font-style: italic;
+      .card-date {
+        font-size: 0.95rem;
+        color: rgba(0, 0, 0, 0.45);
       }
       .card-section {
         background: rgba(255, 255, 255, 0.9);
@@ -220,11 +240,73 @@ const getTemplateStyles = (template: CardTemplate): string => {
         box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
         border-left: 4px solid var(--section-accent, rgba(232, 180, 184, 0.8));
       }
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .section-icon {
+        font-size: 1.5rem;
+      }
+      .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.8);
+      }
+      .section-content {
+        line-height: 1.9;
+        color: rgba(0, 0, 0, 0.75);
+        font-size: 1rem;
+      }
+      .card-two-column {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+      }
+      .card-label {
+        font-size: 0.85rem;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: rgba(0, 0, 0, 0.45);
+        margin-bottom: 6px;
+      }
+      .card-markdown :is(p, ul, ol) {
+        margin: 0 0 10px;
+      }
+      .card-markdown ul,
+      .card-markdown ol,
+      .section-content ul,
+      .section-content ol {
+        padding-left: 24px;
+      }
+      .section-content li {
+        margin-bottom: 8px;
+      }
+      .card-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .card-list li {
+        padding-left: 20px;
+        position: relative;
+      }
       .card-list li::before {
         content: '✦';
         position: absolute;
         left: 0;
         color: rgba(194, 85, 107, 0.6);
+      }
+      .card-footer {
+        text-align: center;
+        margin-top: 32px;
+        font-size: 0.9rem;
+        color: rgba(0, 0, 0, 0.4);
+        letter-spacing: 0.2em;
       }
       .card-footer span {
         display: inline-block;
@@ -233,11 +315,26 @@ const getTemplateStyles = (template: CardTemplate): string => {
         background: rgba(255, 255, 255, 0.8);
         border: 1px solid rgba(232, 180, 184, 0.4);
       }
+      .card-markdown code,
+      .section-content code {
+        background: rgba(0, 0, 0, 0.04);
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 0.9em;
+      }
       .card-markdown a,
       .section-content a {
         color: #c2556b;
         text-decoration: none;
         border-bottom: 1px solid rgba(194, 85, 107, 0.4);
+      }
+      @media (max-width: 640px) {
+        body {
+          padding: 24px 16px;
+        }
+        .card-wrapper {
+          padding: 32px 20px;
+        }
       }
     `,
     starry: `
