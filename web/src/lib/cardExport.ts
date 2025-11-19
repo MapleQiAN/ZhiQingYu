@@ -166,37 +166,10 @@ const getTemplateStyles = (template: CardTemplate): string => {
         margin: 0;
         padding: 48px 24px;
         font-family: 'Source Han Serif SC', 'Noto Serif SC', 'Segoe UI', 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-        background: #fffaf5;
+        background: #ffeef8;
         min-height: 100vh;
         position: relative;
         overflow-x: hidden;
-      }
-      body::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-image: 
-          url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffc8d6' fill-opacity='0.15'%3E%3Cpath d='M30 30c0-8.284-6.716-15-15-15s-15 6.716-15 15 6.716 15 15 15 15-6.716 15-15zm15 0c0-8.284-6.716-15-15-15s-15 6.716-15 15 6.716 15 15 15 15-6.716 15-15z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
-          url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffe4e6' fill-opacity='0.2'%3E%3Cpath d='M20 20c0-5.523-4.477-10-10-10S0 14.477 0 20s4.477 10 10 10 10-4.477 10-10zm10 0c0-5.523-4.477-10-10-10s-10 4.477-10 10 4.477 10 10 10 10-4.477 10-10z'/%3E%3C/g%3E%3C/svg%3E");
-        background-size: 120px 120px, 80px 80px;
-        background-position: 0 0, 60px 60px;
-        pointer-events: none;
-        z-index: 0;
-      }
-      body::after {
-        content: '💕 ❤️ 💖 💗 💝 💞';
-        position: fixed;
-        top: 10%;
-        left: 5%;
-        font-size: 40px;
-        opacity: 0.08;
-        transform: rotate(-15deg);
-        pointer-events: none;
-        z-index: 0;
-        white-space: nowrap;
       }
       .card-wrapper {
         width: min(860px, 100%);
@@ -212,26 +185,6 @@ const getTemplateStyles = (template: CardTemplate): string => {
         position: relative;
         overflow: hidden;
         z-index: 1;
-      }
-      .card-wrapper::before {
-        content: '🌸';
-        position: absolute;
-        top: 20px;
-        right: 30px;
-        font-size: 60px;
-        opacity: 0.1;
-        transform: rotate(25deg);
-        pointer-events: none;
-      }
-      .card-wrapper::after {
-        content: '✨';
-        position: absolute;
-        bottom: 30px;
-        left: 40px;
-        font-size: 50px;
-        opacity: 0.12;
-        transform: rotate(-20deg);
-        pointer-events: none;
       }
       .card-theme {
         font-size: 2rem;
