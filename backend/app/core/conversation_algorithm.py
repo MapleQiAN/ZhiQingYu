@@ -188,6 +188,85 @@ def parse_user_message(message: ChatMessage, history: list[ChatMessage] = None) 
     )
 
 
+def integrate_and_optimize_conversation(
+    messages: list[ChatMessage],
+    conversation_state: ConversationState | None,
+    llm_provider: LLMProvider
+) -> tuple[ParsedState, dict]:
+    """
+    整合已聊内容，优化prompt，为5步生成做准备
+    
+    这个函数会：
+    1. 分析整个对话历史
+    2. 提取关键信息（情绪、场景、需求、资源等）
+    3. 优化parsed和structuredInfo
+    4. 返回优化后的信息用于5步生成
+    
+    Args:
+        messages: 完整的对话消息列表
+        conversation_state: 当前对话状态
+        llm_provider: LLM提供者（暂时不使用，保留接口）
+        
+    Returns:
+        (optimized_parsed, optimized_structured_info): 优化后的解析结果和结构化信息
+    """
+    # 1. 从对话状态中获取已有的结构化信息
+    structured_info = {}
+    if conversation_state and conversation_state.structuredInfo:
+        structured_info = conversation_state.structuredInfo.copy()
+    
+    # 2. 分析整个对话历史，提取关键信息
+    user_messages = [m for m in messages if m.role == "user"]
+    
+    # 3. 整合所有用户消息，重新解析
+    last_user_message = user_messages[-1] if user_messages else None
+    
+    if last_user_message:
+        # 使用最后一条用户消息，但传入完整历史进行解析
+        optimized_parsed = parse_user_message(last_user_message, history=messages[:-1])
+    else:
+        # 如果没有用户消息，创建默认解析
+        optimized_parsed = ParsedState(
+            emotions=["neutral"],
+            intensity=5,
+            scene="general",
+            riskLevel="low",
+            userGoal="want_listen"
+        )
+    
+    # 4. 从对话历史中提取更多信息
+    # 提取resources信息
+    resources = extract_resources_from_conversation(messages)
+    if resources:
+        structured_info["resources"] = resources
+    
+    # 5. 更新结构化信息，使用更准确的值
+    if optimized_parsed.emotions:
+        structured_info["emotion_primary"] = optimized_parsed.emotions[0]
+        if len(optimized_parsed.emotions) > 1:
+            structured_info["emotion_secondary"] = optimized_parsed.emotions[1]
+    
+    structured_info["emotion_intensity"] = optimized_parsed.intensity
+    structured_info["topic"] = optimized_parsed.scene
+    
+    # 提取触发事件（从第一条用户消息或关键消息中提取）
+    if user_messages:
+        first_user_message = user_messages[0]
+        structured_info["trigger"] = first_user_message.content[:200]
+    
+    structured_info["need"] = optimized_parsed.userGoal
+    
+    # 6. 如果对话状态中有更准确的信息，优先使用
+    if conversation_state and conversation_state.structuredInfo:
+        existing_info = conversation_state.structuredInfo
+        # 保留已有的更准确的信息
+        for key in ["emotion_primary", "emotion_intensity", "topic", "trigger", "need", "resources"]:
+            if key in existing_info and existing_info[key]:
+                structured_info[key] = existing_info[key]
+    
+    return optimized_parsed, structured_info
+
+
 def extract_resources_from_conversation(messages: list[ChatMessage]) -> dict:
     """
     从对话历史中提取用户已有资源信息
@@ -532,69 +611,90 @@ def generate_reply_with_algorithm(
     # 高风险时强制使用crisis_safe风格
     style = select_style(user_profile, parsed)
     
-    # 5. 根据当前体验模式与对话进度，确定本轮要执行的步骤集合
-    step_controller = StepController()
-    experience_mode = None
-    if getattr(user_profile, "preferredExperienceMode", None):
-        experience_mode = user_profile.preferredExperienceMode
-    if conversation_state and getattr(conversation_state, "experienceMode", None):
-        experience_mode = conversation_state.experienceMode
-    # 如果前端明确指定了chat_mode，优先使用；否则通过step_controller自动判断
-    if chat_mode:
-        mode = chat_mode
-        # 深聊模式下，一次性执行所有5个步骤
-        if chat_mode == "deep":
-            steps_to_execute = [1, 2, 3, 4, 5]
+    # 5. 判断是否在引导阶段（chatting/exploring/summarizing）
+    # 引导阶段不执行5步生成，只进行普通对话
+    is_guiding_phase = stage in ["chatting", "exploring", "summarizing"]
+    
+    if is_guiding_phase:
+        # 引导阶段：只进行普通对话，不执行5步生成
+        # 使用简单的对话生成，不涉及5步骤系统
+        llm_result = llm_provider.generate_structured_reply(
+            messages=messages,
+            parsed=parsed,
+            style=style,
+            plan=ReplyPlan(style=style, interventions=[], structure={}),
+            interventions=[],
+            conversation_stage=stage
+        )
+        # 设置步骤为空，因为引导阶段不执行5步生成
+        steps_to_execute = []
+        mode = "guiding"
+        experience_mode = None
+    else:
+        # 非引导阶段（inviting或card_generated）：可以执行5步生成
+        # 5. 根据当前体验模式与对话进度，确定本轮要执行的步骤集合
+        step_controller = StepController()
+        experience_mode = None
+        if getattr(user_profile, "preferredExperienceMode", None):
+            experience_mode = user_profile.preferredExperienceMode
+        if conversation_state and getattr(conversation_state, "experienceMode", None):
+            experience_mode = conversation_state.experienceMode
+        # 如果前端明确指定了chat_mode，优先使用；否则通过step_controller自动判断
+        if chat_mode:
+            mode = chat_mode
+            # 深聊模式下，一次性执行所有5个步骤
+            if chat_mode == "deep":
+                steps_to_execute = [1, 2, 3, 4, 5]
+            else:
+                # 快速模式：根据体验模式决定步骤
+                _, steps_to_execute, experience_mode = step_controller.determine_mode_and_steps(
+                    parsed=parsed,
+                    user_profile=user_profile,
+                    conversation_state=conversation_state,
+                    user_input=user_message.content
+                )
+                mode = "quick"
         else:
-            # 快速模式：根据体验模式决定步骤
-            _, steps_to_execute, experience_mode = step_controller.determine_mode_and_steps(
+            mode, steps_to_execute, experience_mode = step_controller.determine_mode_and_steps(
                 parsed=parsed,
                 user_profile=user_profile,
                 conversation_state=conversation_state,
                 user_input=user_message.content
             )
-            mode = "quick"
-    else:
-        mode, steps_to_execute, experience_mode = step_controller.determine_mode_and_steps(
-            parsed=parsed,
-            user_profile=user_profile,
-            conversation_state=conversation_state,
-            user_input=user_message.content
-        )
-    
-    # 6. 选择干预模块
-    interventions = select_interventions(parsed, style)
-    
-    # 7. 针对选定的步骤，规划本轮回复内容
-    five_step_planner = FiveStepPlanner()
-    plan = five_step_planner.plan_steps(
-        parsed=parsed,
-        style=style,
-        interventions=interventions,
-        steps_to_execute=steps_to_execute,
-        conversation_state=conversation_state.model_dump() if conversation_state else None
-    )
-    
-    # 8. 调用LLM生成回复
-    # 深聊模式下，分别调用5次AI请求，每个步骤一次
-    if mode == "deep" and len(steps_to_execute) == 5:
-        llm_result = llm_provider.generate_deep_chat_reply(
-            messages=messages,
+        
+        # 6. 选择干预模块
+        interventions = select_interventions(parsed, style)
+        
+        # 7. 针对选定的步骤，规划本轮回复内容
+        five_step_planner = FiveStepPlanner()
+        plan = five_step_planner.plan_steps(
             parsed=parsed,
             style=style,
-            plan=plan,
-            interventions=interventions
-        )
-    else:
-        # 快速模式或非完整5步骤：使用原来的方法
-        llm_result = llm_provider.generate_structured_reply(
-            messages=messages,
-            parsed=parsed,
-            style=style,
-            plan=plan,
             interventions=interventions,
-            conversation_stage=stage
+            steps_to_execute=steps_to_execute,
+            conversation_state=conversation_state.model_dump() if conversation_state else None
         )
+        
+        # 8. 调用LLM生成回复
+        # 深聊模式下，分别调用5次AI请求，每个步骤一次
+        if mode == "deep" and len(steps_to_execute) == 5:
+            llm_result = llm_provider.generate_deep_chat_reply(
+                messages=messages,
+                parsed=parsed,
+                style=style,
+                plan=plan,
+                interventions=interventions
+            )
+        else:
+            # 快速模式或非完整5步骤：使用原来的方法
+            llm_result = llm_provider.generate_structured_reply(
+                messages=messages,
+                parsed=parsed,
+                style=style,
+                plan=plan,
+                interventions=interventions,
+                conversation_stage=stage
+            )
     
     # 8.5. 根据阶段调整回复内容（如果需要）
     if stage == "inviting":
@@ -606,13 +706,19 @@ def generate_reply_with_algorithm(
     llm_result.should_show_card_button = should_show_button
     
     # 9. 更新对话状态
-    updated_state = step_controller.update_conversation_state(
-        conversation_state=conversation_state,
-        executed_steps=steps_to_execute,
-        mode=mode,
-        experience_mode=experience_mode,
-        step_content=plan.stepContents
-    )
+    step_controller = StepController()
+    if is_guiding_phase:
+        # 引导阶段：不更新步骤状态，只更新对话状态
+        updated_state = conversation_state or ConversationState()
+    else:
+        # 非引导阶段：正常更新步骤状态
+        updated_state = step_controller.update_conversation_state(
+            conversation_state=conversation_state,
+            executed_steps=steps_to_execute,
+            mode=mode,
+            experience_mode=experience_mode,
+            step_content=plan.stepContents if 'plan' in locals() else {}
+        )
     
     # 更新多阶段流程状态
     updated_state.conversationStage = stage
