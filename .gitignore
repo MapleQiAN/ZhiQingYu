@@ -44,8 +44,4 @@ backend/data/
 /AI开发规范.md
 /.cursor/
 web/pnpm-lock.yaml
-docs/前端更新总结.md
-docs/算法提升.md
-docs/算法提升实现总结.md
-docs/栀情雨情感陪伴算法升级设计文档（完整版）.md
-docs/AI开发规范.md
+docs/
