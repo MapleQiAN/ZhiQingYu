@@ -492,62 +492,94 @@ def determine_conversation_stage(
     """
     确定当前对话阶段和是否应该显示"开始关心吧！"按钮
     
-    阶段流程：
-    1. chatting: 普通陪聊（0-1轮）
-    2. exploring: 情绪与事件探索（2-4轮）
-    3. summarizing: 小结与校准（1轮）
-    4. inviting: 邀请生成关心卡（显示按钮）
-    5. card_generated: 已生成卡片
-    
+    调整后的阶段流程（以用户消息轮次为基准）：
+    - 第 1 轮用户消息: chatting (阶段1，开场简单陪聊)
+    - 第 2、3 轮用户消息: exploring (阶段2，固定两轮探索，主要是多问两个问题)
+    - 第 4 轮用户消息: summarizing (阶段3，小结与校准)
+    - 第 5 轮及之后: inviting (阶段4，邀请生成关心卡，并显示按钮)
+
+    其中 exploring 被严格限制为最多两轮，防止一直停留在阶段2。
+
     Returns:
         (stage, should_show_button): 当前阶段和是否显示按钮
     """
-    # 如果还没有任何阶段信息，把这种情况也视为"新对话"
+    # 高风险时，不进入邀请阶段，始终不显示按钮，但��使用阶段控制文案
+    if parsed.riskLevel == "high":
+        # 没有历史阶段信息时，根据轮次给一个合理的默认引导阶段
+        if not conversation_state or not getattr(conversation_state, "conversationStage", None):
+            if turn_count <= 1:
+                return "chatting", False
+            if turn_count == 2 or turn_count == 3:
+                return "exploring", False
+            return "summarizing", False
+        # 有历史阶段时，保持原阶段，不进入 inviting
+        current_stage = conversation_state.conversationStage
+        if current_stage == "inviting":
+            # 高风险下不再停留在邀请阶段，退回到 summarizing 做情绪接住
+            return "summarizing", False
+        if current_stage == "card_generated":
+            return "card_generated", False
+        return current_stage, False
+
+    # 正常风险流程
     if not conversation_state or not getattr(conversation_state, "conversationStage", None):
-        # 首轮用户输入：进入阶段1 chatting
+        # 新对话：根据当前用户轮数直接决定阶段
         if turn_count <= 1:
+            # 第1轮：开场陪聊
             return "chatting", False
-        # 2-4轮：阶段2 exploring
-        if 2 <= turn_count <= 4:
+        if turn_count == 2 or turn_count == 3:
+            # 第2-3轮：固定为exploring，两轮探索问问题
             return "exploring", False
-        # 5轮及以上：阶段3 summarizing
-        return "summarizing", False
+        if turn_count == 4:
+            # 第4轮：小结与校准
+            return "summarizing", False
+        # 第5轮及之后：邀请阶段，显示按钮
+        return "inviting", True
 
     current_stage = conversation_state.conversationStage
 
-    # 如果已经生成卡片，保持card_generated状态
+    # 如果已经生成卡片，保持 card_generated 状态
     if current_stage == "card_generated":
         return "card_generated", False
-    
-    # 如果高风险，不进入邀请阶段
-    if parsed.riskLevel == "high":
-        return current_stage, False
-    
-    # 根据轮数和阶段判断
+
+    # 按轮次推进阶段，确保 exploring 最多两轮
     if current_stage == "chatting":
-        if turn_count >= 2:
-            # 至少经历了一轮完整的来往后进入探索
+        if turn_count == 1:
+            return "chatting", False
+        # 从第2轮开始进入 exploring
+        if turn_count == 2 or turn_count == 3:
             return "exploring", False
-        return "chatting", False
-    
-    elif current_stage == "exploring":
-        # 探索阶段：2-4轮，收集足够信息后进入小结
-        if turn_count >= 5:  # 至少5轮对话后进入小结阶段
+        if turn_count == 4:
             return "summarizing", False
-        return "exploring", False
-    
-    elif current_stage == "summarizing":
-        # 小结阶段：用户回复后，根据是否校正进入邀请阶段
-        if turn_count > conversation_state.turnCount:
-            # 用户已在小结后回复，进入邀请阶段
+        return "inviting", True
+
+    if current_stage == "exploring":
+        # exploring 固定两轮：当轮次 >=4 时自动进入 summarizing
+        if turn_count <= 3:
+            return "exploring", False
+        if turn_count == 4:
+            return "summarizing", False
+        return "inviting", True
+
+    if current_stage == "summarizing":
+        # summarizing 只占一轮：用户在小结后再回复，就进入邀请阶段
+        # 这里通过轮次判断：第4轮是 summarizing，本轮(>=5)进入 inviting
+        if turn_count >= 5:
             return "inviting", True
         return "summarizing", False
-    
-    elif current_stage == "inviting":
-        # 邀请阶段保持，直到用户点击按钮
+
+    if current_stage == "inviting":
+        # 邀请阶段保持，直到用户点击按钮生成卡片
         return "inviting", True
-    
-    return current_stage, False
+
+    # 其他未知阶段：安全兜底，按轮次给阶段
+    if turn_count <= 1:
+        return "chatting", False
+    if turn_count == 2 or turn_count == 3:
+        return "exploring", False
+    if turn_count == 4:
+        return "summarizing", False
+    return "inviting", True
 
 
 def generate_reply_with_algorithm(
