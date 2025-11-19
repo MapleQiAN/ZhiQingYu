@@ -51,6 +51,11 @@ class JsonChatLLMProvider(LLMProvider):
                 result_text = result
                 usage_info = {}
             
+            # 检查result_text是否有效
+            if not result_text or (isinstance(result_text, str) and not result_text.strip()):
+                self.logger.error("[LLM Provider] API返回的文本为空")
+                raise ValueError("API返回的文本为空")
+            
             result_dict = self._parse_json_payload(result_text)
             llm_result = self._build_simple_result(result_dict)
             # 设置tokens信息
@@ -89,6 +94,11 @@ class JsonChatLLMProvider(LLMProvider):
             else:
                 result_text = result
                 usage_info = {}
+            
+            # 检查result_text是否有效
+            if not result_text or (isinstance(result_text, str) and not result_text.strip()):
+                self.logger.error("[LLM Provider] API返回的文本为空")
+                raise ValueError("API返回的文本为空")
             
             result_dict = self._parse_json_payload(result_text)
             llm_result = self._build_structured_result(result_dict, parsed)
@@ -228,6 +238,11 @@ class JsonChatLLMProvider(LLMProvider):
                 result_text = result
                 usage_info = {}
             
+            # 检查result_text是否有效
+            if not result_text or (isinstance(result_text, str) and not result_text.strip()):
+                self.logger.error(f"[Deep Chat] 步骤 {step_num} API返回的文本为空")
+                raise ValueError(f"步骤 {step_num} API返回的文本为空")
+            
             result_dict = self._parse_json_payload(result_text)
             
             return {
@@ -260,7 +275,19 @@ class JsonChatLLMProvider(LLMProvider):
         return formatted
 
     def _parse_json_payload(self, payload: str) -> Dict[str, Any]:
+        if payload is None:
+            self.logger.error("[JSON Parser] payload为None")
+            raise ValueError("无法解析JSON：payload为None")
+        
+        if not isinstance(payload, str):
+            self.logger.error(f"[JSON Parser] payload类型错误: {type(payload)}")
+            raise ValueError(f"无法解析JSON：payload类型错误，期望str，得到{type(payload)}")
+        
         text = payload.strip()
+        if not text:
+            self.logger.error("[JSON Parser] payload为空字符串")
+            raise ValueError("无法解析JSON：payload为空")
+        
         # 处理常见的LLM输出包装，例如 ```json``` 或 ``` 块
         if "```json" in text:
             text = text.split("```json", 1)[1]
@@ -277,13 +304,23 @@ class JsonChatLLMProvider(LLMProvider):
                 text = text.split(end_tag, 1)[1]
         
         text = text.strip()
+        if not text:
+            self.logger.error("[JSON Parser] 清理后的文本为空")
+            raise ValueError("无法解析JSON：清理后的文本为空")
+        
         try:
             return json.loads(text)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            self.logger.warning(f"[JSON Parser] JSON解析失败，尝试提取JSON对象: {str(e)}")
             extracted = self._extract_json_object(text)
             if extracted:
-                return json.loads(extracted)
-            raise
+                try:
+                    return json.loads(extracted)
+                except json.JSONDecodeError:
+                    self.logger.error(f"[JSON Parser] 提取的JSON对象仍然无法解析: {extracted[:200]}")
+                    raise ValueError(f"无法解析JSON：{str(e)}")
+            self.logger.error(f"[JSON Parser] 无法从文本中提取JSON对象: {text[:200]}")
+            raise ValueError(f"无法解析JSON：{str(e)}")
 
     def _extract_json_object(self, text: str) -> str | None:
         """
