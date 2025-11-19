@@ -502,15 +502,19 @@ def determine_conversation_stage(
     Returns:
         (stage, should_show_button): 当前阶段和是否显示按钮
     """
-    if not conversation_state:
-        # 新对话，从chatting开始
-        if turn_count == 0:
+    # 如果还没有任何阶段信息，把这种情况也视为"新对话"
+    if not conversation_state or not getattr(conversation_state, "conversationStage", None):
+        # 首轮用户输入：进入阶段1 chatting
+        if turn_count <= 1:
             return "chatting", False
-        else:
+        # 2-4轮：阶段2 exploring
+        if 2 <= turn_count <= 4:
             return "exploring", False
-    
+        # 5轮及以上：阶段3 summarizing
+        return "summarizing", False
+
     current_stage = conversation_state.conversationStage
-    
+
     # 如果已经生成卡片，保持card_generated状态
     if current_stage == "card_generated":
         return "card_generated", False
@@ -521,22 +525,21 @@ def determine_conversation_stage(
     
     # 根据轮数和阶段判断
     if current_stage == "chatting":
-        if turn_count >= 1:
+        if turn_count >= 2:
+            # 至少经历了一轮完整的来往后进入探索
             return "exploring", False
         return "chatting", False
     
     elif current_stage == "exploring":
         # 探索阶段：2-4轮，收集足够信息后进入小结
-        if turn_count >= 4:  # 至少4轮对话后进入小结阶段
+        if turn_count >= 5:  # 至少5轮对话后进入小结阶段
             return "summarizing", False
         return "exploring", False
     
     elif current_stage == "summarizing":
         # 小结阶段：用户回复后，根据是否校正进入邀请阶段
-        # 如果用户回复表示确认或校正，进入邀请阶段
-        # 这里通过检查用户消息来判断（简单实现：如果用户消息较短且包含确认词，认为已校正）
         if turn_count > conversation_state.turnCount:
-            # 用户已回复，进入邀请阶段
+            # 用户已在小结后回复，进入邀请阶段
             return "inviting", True
         return "summarizing", False
     
@@ -596,12 +599,14 @@ def generate_reply_with_algorithm(
     # 3.5. 更新对话轮数和阶段
     if not conversation_state:
         conversation_state = ConversationState()
-    conversation_state.turnCount = len([m for m in messages if m.role == "user"])
-    
+    # 计算当前轮次（用户轮数），用于阶段控制
+    turn_count = len([m for m in messages if m.role == "user"])
+    conversation_state.turnCount = turn_count
+
     # 确定当前阶段和是否显示按钮
     stage, should_show_button = determine_conversation_stage(
         conversation_state,
-        conversation_state.turnCount,
+        turn_count,
         parsed,
         messages
     )
