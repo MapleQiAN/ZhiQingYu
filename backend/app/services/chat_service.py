@@ -119,7 +119,7 @@ class ChatService:
             
             logger = logging.getLogger(__name__)
             logger.info("=" * 80)
-            logger.info("[Chat Service] AI回复生成完成（5步骤系统）")
+            logger.info("[Chat Service] AI回复生成完成")
             logger.info(f"  用户消息: {user_message.content if user_message else 'N/A'}")
             logger.info(f"  回复长度: {len(llm_result.reply)} 字符")
             logger.info(f"  完整回复内容:\n{llm_result.reply}")
