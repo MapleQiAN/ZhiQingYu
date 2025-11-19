@@ -154,6 +154,7 @@ export const generateCardHtml = (cardData: CardData) => {
   const date = formatDate()
   const useThreePart = shouldUseThreePart(cardData)
   const sectionsHtml = useThreePart ? buildThreePartSections(cardData) : buildFiveStepSections(cardData)
+  const userQuestion = cardData.user_question?.trim()
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -237,6 +238,17 @@ export const generateCardHtml = (cardData: CardData) => {
       .card-date {
         font-size: 0.95rem;
         color: rgba(0, 0, 0, 0.45);
+      }
+      .card-question {
+        font-size: 1.05rem;
+        line-height: 1.7;
+        color: rgba(0, 0, 0, 0.75);
+        margin-top: 20px;
+        padding: 16px 20px;
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 16px;
+        border-left: 3px solid rgba(194, 85, 107, 0.5);
+        font-style: italic;
       }
       .card-section {
         background: rgba(255, 255, 255, 0.9);
@@ -350,12 +362,13 @@ export const generateCardHtml = (cardData: CardData) => {
       <div class="card-content">
         <header>
           <div class="card-theme">${title}</div>
-          <div class="card-tagline">HEART · CARE · MOMENTS</div>
+          <div class="card-tagline">LOVE · YOURSELF · MOMENTS</div>
           <div class="card-date">${date}</div>
+          ${userQuestion ? `<div class="card-question">${renderMarkdown(userQuestion)}</div>` : ''}
         </header>
         ${sectionsHtml}
         <div class="card-footer">
-          <span>筑一方温柔心岛</span>
+          <span>栀情屿 · 筑一方温柔心岛</span>
         </div>
       </div>
     </div>

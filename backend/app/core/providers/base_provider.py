@@ -57,7 +57,7 @@ class JsonChatLLMProvider(LLMProvider):
                 raise ValueError("API返回的文本为空")
             
             result_dict = self._parse_json_payload(result_text)
-            llm_result = self._build_simple_result(result_dict)
+            llm_result = self._build_simple_result(result_dict, messages)
             # 设置tokens信息
             if usage_info:
                 llm_result.prompt_tokens = usage_info.get("prompt_tokens")
@@ -101,7 +101,7 @@ class JsonChatLLMProvider(LLMProvider):
                 raise ValueError("API返回的文本为空")
             
             result_dict = self._parse_json_payload(result_text)
-            llm_result = self._build_structured_result(result_dict, parsed)
+            llm_result = self._build_structured_result(result_dict, parsed, messages)
             # 设置tokens信息
             if usage_info:
                 llm_result.prompt_tokens = usage_info.get("prompt_tokens")
@@ -183,7 +183,7 @@ class JsonChatLLMProvider(LLMProvider):
                 step_results[step_num] = {"content": "", "data": {}}
         
         # 整合所有步骤的结果
-        return self._build_deep_chat_result(step_results, parsed, total_prompt_tokens, total_completion_tokens, total_tokens)
+        return self._build_deep_chat_result(step_results, parsed, total_prompt_tokens, total_completion_tokens, total_tokens, messages)
 
     def generate_single_step(
         self,
@@ -356,12 +356,28 @@ class JsonChatLLMProvider(LLMProvider):
                             return text[start_index : idx + 1]
         return None
 
-    def _build_simple_result(self, result_dict: Dict[str, Any]) -> LLMResult:
+    def _build_simple_result(self, result_dict: Dict[str, Any], messages: List[ChatMessage] = None) -> LLMResult:
         reply = result_dict.get("reply", "")
+        
+        # 提取用户提问内容
+        user_question = None
+        if messages:
+            user_messages = [msg.content for msg in messages if msg.role == "user"]
+            if user_messages:
+                if len(user_messages) == 1:
+                    user_question = user_messages[0].strip()
+                else:
+                    user_question = user_messages[-1].strip()
+                    if len(user_question) < 20 and len(user_messages) > 1:
+                        combined = " ".join(user_messages[-2:]).strip()
+                        if len(combined) <= 200:
+                            user_question = combined
+        
         card_data = None
         if any(key in result_dict for key in ("theme", "emotion_reflection", "cognitive_clarification", "action_suggestions")):
             card_data = {
                 "theme": result_dict.get("theme", ""),
+                "user_question": user_question,  # 用户提问内容
                 "emotion_echo": result_dict.get("emotion_reflection", ""),
                 "clarification": result_dict.get("cognitive_clarification", ""),
                 "suggestion": result_dict.get("action_suggestions", []),
@@ -381,7 +397,7 @@ class JsonChatLLMProvider(LLMProvider):
             total_tokens=None,
         )
 
-    def _build_structured_result(self, result_dict: Dict[str, Any], parsed: ParsedState) -> LLMResult:
+    def _build_structured_result(self, result_dict: Dict[str, Any], parsed: ParsedState, messages: List[ChatMessage] = None) -> LLMResult:
         # 判断是否包含5步骤数据
         has_five_steps = any(
             key.startswith("step") and key.endswith(("_emotion_mirror", "_problem_restate", "_breakdown", "_explanation", "_suggestions", "_summary"))
@@ -424,9 +440,24 @@ class JsonChatLLMProvider(LLMProvider):
             
             reply = "\n\n".join(reply_parts) if reply_parts else result_dict.get("reply", "")
 
+            # 提取用户提问内容
+            user_question = None
+            if messages:
+                user_messages = [msg.content for msg in messages if msg.role == "user"]
+                if user_messages:
+                    if len(user_messages) == 1:
+                        user_question = user_messages[0].strip()
+                    else:
+                        user_question = user_messages[-1].strip()
+                        if len(user_question) < 20 and len(user_messages) > 1:
+                            combined = " ".join(user_messages[-2:]).strip()
+                            if len(combined) <= 200:
+                                user_question = combined
+
             card_data = {
                 "theme": result_dict.get("theme", ""),
                 "useThreePart": False,  # 标记为5步骤模式
+                "user_question": user_question,  # 用户提问内容
                 "step1_emotion_mirror": result_dict.get("step1_emotion_mirror", ""),
                 "step1_problem_restate": result_dict.get("step1_problem_restate", ""),
                 "step2_breakdown": result_dict.get("step2_breakdown", ""),
@@ -450,9 +481,24 @@ class JsonChatLLMProvider(LLMProvider):
 
             reply = "\n\n".join(reply_parts) if reply_parts else result_dict.get("reply", "")
 
+            # 提取用户提问内容
+            user_question = None
+            if messages:
+                user_messages = [msg.content for msg in messages if msg.role == "user"]
+                if user_messages:
+                    if len(user_messages) == 1:
+                        user_question = user_messages[0].strip()
+                    else:
+                        user_question = user_messages[-1].strip()
+                        if len(user_question) < 20 and len(user_messages) > 1:
+                            combined = " ".join(user_messages[-2:]).strip()
+                            if len(combined) <= 200:
+                                user_question = combined
+
             card_data = {
                 "theme": result_dict.get("theme", ""),
                 "useThreePart": True,  # 标记为3卡片模式
+                "user_question": user_question,  # 用户提问内容
                 "emotion_echo": result_dict.get("emotion_reflection", ""),
                 "clarification": result_dict.get("cognitive_clarification", ""),
                 "suggestion": result_dict.get("action_suggestions", []),
@@ -1133,6 +1179,7 @@ class JsonChatLLMProvider(LLMProvider):
         total_prompt_tokens: int,
         total_completion_tokens: int,
         total_tokens: int,
+        messages: List[ChatMessage] = None,
     ) -> LLMResult:
         """
         整合5个步骤的结果，构建最终的LLMResult
@@ -1228,10 +1275,31 @@ class JsonChatLLMProvider(LLMProvider):
         
         reply = "\n\n".join(reply_parts) if reply_parts else "抱歉，我无法生成回复。"
         
+        # 提取用户提问内容
+        user_question = None
+        if messages:
+            # 收集所有用户消息
+            user_messages = [msg.content for msg in messages if msg.role == "user"]
+            if user_messages:
+                # 如果只有一条用户消息，直接使用
+                if len(user_messages) == 1:
+                    user_question = user_messages[0].strip()
+                else:
+                    # 如果有多条，可以总结或使用最后一条
+                    # 这里使用最后一条用户消息，因为它通常是最新的问题
+                    user_question = user_messages[-1].strip()
+                    # 如果最后一条太短，可以结合前面的消息
+                    if len(user_question) < 20 and len(user_messages) > 1:
+                        # 结合最后两条用户消息
+                        combined = " ".join(user_messages[-2:]).strip()
+                        if len(combined) <= 200:  # 限制长度
+                            user_question = combined
+        
         # 构建card_data
         card_data = {
             "theme": combined_data["theme"],
             "useThreePart": False,  # 标记为5步骤模式
+            "user_question": user_question,  # 用户提问内容
             "step1_emotion_mirror": combined_data["step1_emotion_mirror"],
             "step1_problem_restate": combined_data["step1_problem_restate"],
             "step2_breakdown": combined_data["step2_breakdown"],
