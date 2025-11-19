@@ -258,7 +258,8 @@
     </div>
   </Teleport>
   
-  <!-- 模板选择对话框 -->
+  <!-- 模板选择对话框 - 已隐藏，供将来恢复时使用 -->
+  <!--
   <n-modal
     v-model:show="templateSelectVisible"
     preset="dialog"
@@ -280,6 +281,7 @@
       </div>
     </div>
   </n-modal>
+  -->
 </template>
 
 <script setup lang="ts">
@@ -639,12 +641,33 @@ const exportTemplateSelection = ref<CardTemplate>('basic')
 const handleExportCard = (cardData?: CardData | null) => {
   if (!cardData) return
   
-  // 保存要导出的卡片数据
-  currentExportCardData.value = cardData
-  // 重置选中的模板
-  exportTemplateSelection.value = 'basic'
-  // 显示模板选择对话框
-  templateSelectVisible.value = true
+  // 直接使用默认模板导出，不显示选择对话框
+  try {
+    const html = generateCardHtml(cardData, 'basic')
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const title = sanitizeFileName(cardData.theme?.trim() || t('chat.cardTitle'))
+    const date = new Date().toISOString().split('T')[0]
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${title}-${date}.html`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    message.success(t('chat.exportSuccess'))
+  } catch (error) {
+    console.error(error)
+    message.error(t('chat.exportFailed'))
+  }
+  
+  // 以下代码保留，供将来恢复模板选择功能时使用
+  // // 保存要导出的卡片数据
+  // currentExportCardData.value = cardData
+  // // 重置选中的模板
+  // exportTemplateSelection.value = 'basic'
+  // // 显示模板选择对话框
+  // templateSelectVisible.value = true
 }
 
 const handleTemplateExport = () => {
