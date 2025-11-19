@@ -4,7 +4,7 @@ Shared JSON chat provider utilities.
 import json
 import logging
 from abc import abstractmethod
-from typing import Any, Dict, List, Literal
+from typing import Any, Dict, List, Literal, Optional
 
 from app.core.llm_provider import LLMProvider, LLMResult
 from app.schemas.chat import ChatMessage
