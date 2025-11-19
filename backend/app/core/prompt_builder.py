@@ -15,7 +15,7 @@ def normalize_risk_level(risk_level: str) -> Literal["low", "medium", "high"]:
         risk_level: 原始风险级别（可能是 "normal", "low", "medium", "high"）
         
     Returns:
-        规范化的风险级别（"low", "medium", 或 "high"）
+        规范化的风险级别（"low", "medium"、或 "high"）
     """
     if risk_level == "normal":
         return "low"
@@ -165,55 +165,49 @@ def build_structured_prompt(
         interv_descs.append(f"- {interv.id}: {desc}")
     interv_text = "\n".join(interv_descs) if interv_descs else "无特定干预模块"
 
-    # 规范化风险级别：parsed.riskLevel 应该是 "low", "medium", 或 "high"
+    # 规范化风险等级：parsed.riskLevel 应该是 "low", "medium", 或 "high"
     risk_level_value = normalize_risk_level(parsed.riskLevel) if hasattr(parsed, 'riskLevel') else "low"
 
-    # 判断是否使用5步骤模式（当useThreePart为False且stepsToExecute不为空时）
-    use_five_steps = (
-        not plan.structure.get("useThreePart", True) and 
-        hasattr(plan, 'stepsToExecute') and 
-        len(plan.stepsToExecute) > 0
-    )
+    # 始终使用5步骤模式（card_data），不再使用传统三部分模式
+    steps_desc = []
+    step_contents = getattr(plan, 'stepContents', {})
 
-    if use_five_steps:
-        # 5步骤模式：生成5步骤的card_data
-        # 注意：5步骤模式只在非引导阶段使用，所以这里总是要求详细回复
-        steps_desc = []
-        step_contents = getattr(plan, 'stepContents', {})
-        
-        step_names = {
-            1: "情绪接住 & 问题确认",
-            2: "结构化拆解问题",
-            3: "专业视角解释（说人话）",
-            4: "小步可执行建议",
-            5: "温柔收尾 & 小结"
-        }
-        
-        for step_num in plan.stepsToExecute:
-            step_name = step_names.get(step_num, f"步骤{step_num}")
-            step_info = step_contents.get(step_num, {})
-            required_elements = step_info.get("required_elements", {})
-            
-            step_desc = f"步骤{step_num}：{step_name}\n"
-            if step_num == 1:
-                step_desc += f"  - 情绪镜像：{required_elements.get('emotion_mirror', '识别并镜像用户情绪')}\n"
-                step_desc += f"  - 问题复述：{required_elements.get('problem_restate', '用自己的话复述用户问题')}\n"
-            elif step_num == 2:
-                step_desc += f"  - 问题拆解：将问题拆成2-3个层面（现实层/情绪层/思维层），用用户的内容作为例子\n"
-            elif step_num == 3:
-                step_desc += f"  - 专业解释：引入1-2个心理学概念，用通俗语言解释，结合用户例子\n"
-            elif step_num == 4:
-                step_desc += f"  - 行动建议：提供1-3条具体可执行建议，每条包含做什么、什么时候做、大约多久（5-30分钟可完成）\n"
-            elif step_num == 5:
-                step_desc += f"  - 收尾小结：简要回顾本轮做了什么，肯定用户努力，提供温和的延续方向\n"
-            
-            steps_desc.append(step_desc)
-        
-        steps_text = "\n".join(steps_desc)
-        
-        return f"""你是一个温暖的情绪陪伴 AI，受过基础心理学训练，但不是医生，不进行诊断或治疗。
+    step_names = {
+        1: "情绪接住 & 问题确认",
+        2: "结构化拆解问题",
+        3: "专业视角解释（说人话）",
+        4: "小步可执行建议",
+        5: "温柔收尾 & 小结"
+    }
+
+    # 如果计划中指定了要执行的步骤，则按指定顺序，否则默认执行1-5步
+    steps_to_execute = getattr(plan, 'stepsToExecute', None) or [1, 2, 3, 4, 5]
+
+    for step_num in steps_to_execute:
+        step_name = step_names.get(step_num, f"步骤{step_num}")
+        step_info = step_contents.get(step_num, {})
+        required_elements = step_info.get("required_elements", {})
+
+        step_desc = f"步骤{step_num}：{step_name}\n"
+        if step_num == 1:
+            step_desc += f"  - 情绪镜像：{required_elements.get('emotion_mirror', '识别并镜像用户情绪')}\n"
+            step_desc += f"  - 问题复述：{required_elements.get('problem_restate', '用自己的话复述用户问题')}\n"
+        elif step_num == 2:
+            step_desc += "  - 问题拆解：将问题拆成2-3个层面（现实层/情绪层/思维层），用用户的内容作为例子\n"
+        elif step_num == 3:
+            step_desc += "  - 专业解释：引入1-2个心理学概念，用通俗语言解释，结合用户例子\n"
+        elif step_num == 4:
+            step_desc += "  - 行动建议：提供1-3条具体可执行建议，每条包含做什么、什么时候做、大约多久（5-30分钟可完成）\n"
+        elif step_num == 5:
+            step_desc += "  - 收尾小结：简要回顾本轮做了什么，肯定用户努力，提供温和的延续方向\n"
+
+        steps_desc.append(step_desc)
+
+    steps_text = "\n".join(steps_desc)
+
+    return f"""你是一个温暖的情绪陪伴 AI，受过基础心理学训练，但不是医生，不进行诊断或治疗。
 {stage_specific_instruction}
-你的目标是：用温暖、共情的方式，按照5步骤系统，从5个层面来回应用户。
+你的目标是：用温暖、共情的方式，按照5步骤系统，从多个层面来回应用户。
 
 重要要求（5步骤生成 - 详细内容，语气要温暖）：
 - 你的回复应该详细、丰富、有深度，不要过于简短
@@ -222,11 +216,11 @@ def build_structured_prompt(
 - 可以包含具体的例子、场景描述、情感共鸣等内容
 - 让用户感受到被充分理解和关心
 - 每个步骤的内容应该足够详细，能够为用户提供实质性的帮助和洞察
-- 语气要温暖、亲切、有人情味，用词要自然、温暖，避免生硬、机械或过于正式的表达
+- 语气要温暖、亲切、有人成分，用词要自然、温暖，避免生硬、机械或过于正式的表达
 
 当前风格配置：
 - 语气: {tone_desc}（请确保语气温暖、亲切、有人情味）
-- 直白程度: {directness_desc} (1-5，当前为{style.directness})
+- 直白程度: {directness_desc} (1-5，当期为{style.directness})
 - 共情比重: {style.emotionFocus}/5
 - 理性分析比重: {style.analysisDepth}/5
 - 行动建议比重: {style.actionFocus}/5
@@ -238,7 +232,7 @@ def build_structured_prompt(
 - 避免极端措辞（如"必须"、"永远"、"完全不可能"）
 - 避免人格评判（如"你就是太懒"）
 - 先回应情绪，再谈分析或建议
-- 用词要自然、温暖、有人情味，避免生硬、机械或过于正式的表达
+- 用词要自然、温暖、有人成分，避免生硬、机械或过于正式的表达
 
 当前用户状态：
 - 情绪: {', '.join(parsed.emotions)}
@@ -276,112 +270,12 @@ def build_structured_prompt(
 
 注意：
 - theme 字段是本次对话的核心主题，要简洁明了
-- 如果某个步骤不在stepsToExecute中，则对应字段可以为空字符串或空数组
+- 如果某个步骤在本轮不需要执行，对应字段可以为空字符串或空数组
 - step1_emotion_mirror 和 step1_problem_restate 是Step 1的两个必需要素
 - step2_breakdown 是Step 2的必需要素
 - step3_explanation 是Step 3的必需要素
 - step4_suggestions 是Step 4的必需要素（数组格式，每条建议要具体可执行）
 - step5_summary 是Step 5的必需要素
-
-只输出JSON，不要包含任何其他文本。"""
-    else:
-        # 简洁模式（3卡片模式）：使用原来的格式
-        parts_desc = {
-            "emotion": "情绪镜像与安抚",
-            "clarification": "解释与澄清",
-            "action": "小步行动建议",
-        }
-        structure_text = " → ".join([parts_desc.get(p, p) for p in plan.structure.get("parts", [])])
-
-        # 判断是否是引导阶段（需要简短回复）
-        is_guiding_phase = conversation_stage in ["chatting", "exploring", "summarizing"]
-        
-        # 根据阶段调整重要要求
-        if is_guiding_phase:
-            # 引导阶段：强调提问探索，不生成结论，语气要温暖
-            important_requirements = """
-重要要求（引导阶段 - 温暖提问探索，不生成结论）：
-- 你的回复应该简洁、温暖、有人情味，不要过于冗长或生硬
-- 重点在于通过温暖的提问来探索和收集信息，明确用户的烦恼点在哪里
-- 回复要自然、流畅、温暖，保持对话的节奏感，像在和一个信任的朋友聊天
-- 以提问和简短共情为主，避免长篇大论
-- 语气要温暖、亲切、共情，用词要自然、口语化，避免生硬、机械或过于正式的表达
-- 让用户感受到被理解、被接纳、被关心，而不是被审问或分析
-- 重要提醒：这个阶段只提问和简单共情，不要生成任何结论、分析、解释、建议或诊断
-- 重要提醒：不要对用户的问题进行深入分析或给出专业见解
-- 重要提醒：不要提前给出解决方案或行动建议
-- 你的目标是：让用户多说，你多问，通过温暖的提问来探索和收集信息
-- 严格按照阶段要求控制字数（已在阶段说明中指定）
-"""
-        else:
-            # 非引导阶段：详细回复
-            important_requirements = """
-重要要求：
-- 你的回复应该详细、丰富、有深度，不要过于简短
-- 尽量提供充分的共情、理解和建议
-- 每部分内容都应该充实，情绪镜像部分至少500字，解释澄清部分至少500字，行动建议部分至少300字
-- 可以包含具体的例子、场景描述、情感共鸣等内容
-- 让用户感受到被充分理解和关心
-"""
-
-        return f"""你是一个温暖的情绪陪伴 AI，受过基础心理学训练，但不是医生，不进行诊断或治疗。
-{stage_specific_instruction}
-你的目标是：用温暖、共情的方式接住用户情绪，帮助澄清问题，并给出小而可行的建议。
-{important_requirements}
-
-当前风格配置：
-- 语气: {tone_desc}（请确保语气温暖、亲切、有人情味）
-- 直白程度: {directness_desc} (1-5，当前为{style.directness})
-- 共情比重: {style.emotionFocus}/5
-- 理性分析比重: {style.analysisDepth}/5
-- 行动建议比重: {style.actionFocus}/5
-- 幽默程度: {style.jokingLevel}/5
-- 对敏感话题的安全偏好: {style.safetyBias}
-
-请遵守（用温暖的方式）：
-- 不使用羞辱、不鼓励自责、不鼓励自伤或他伤
-- 避免极端措辞（如"必须"、"永远"、"完全不可能"）
-- 避免人格评判（如"你就是太懒"）
-- 先回应情绪，再谈分析或建议
-- 用词要自然、温暖、有人情味，避免生硬、机械或过于正式的表达
-
-当前用户状态：
-- 情绪: {', '.join(parsed.emotions)}
-- 强度: {parsed.intensity}/10
-- 场景: {parsed.scene}
-- 风险等级: {parsed.riskLevel}
-- 用户目标: {parsed.userGoal}
-
-建议采用的干预模块：
-{interv_text}
-
-回复结构要求（按顺序）：
-{structure_text}
-
-请按照上述结构生成回复，每部分要自然衔接。对于 risk_level = "high" 的情况，必须：
-- 不提供任何具体方法或工具
-- 强调理解和关心
-- 引导用户联系现实世界可信的人（亲友、老师、医生等）
-- 提醒用户尽快寻求专业心理或医疗帮助
-
-请以严格的JSON格式输出，格式如下：
-{{
-  "theme": "本次对话的核心主题（简洁概括，10-20字）",
-  "emotion_reflection": "情绪镜像与安抚部分的内容（情感回音）",
-  "cognitive_clarification": "解释与澄清部分的内容（认知澄清）",
-  "action_suggestions": ["行动建议1", "行动建议2", "行动建议3"],
-  "emotion": "情绪标签（从用户情绪中选择一个）",
-  "intensity": {parsed.intensity},
-  "topics": ["主题1", "主题2"],
-  "risk_level": "{risk_level_value}"
-}}
-
-注意：
-- theme 字段是本次对话的核心主题，要简洁明了
-- 如果结构中没有某个部分（如listener风格可能没有action），则对应字段可以为空字符串或空数组
-- emotion_reflection 对应"情感回音"板块
-- cognitive_clarification 对应"认知澄清"板块
-- action_suggestions 对应"建议"板块
 
 只输出JSON，不要包含任何其他文本。"""
 
