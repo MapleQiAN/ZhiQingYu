@@ -652,24 +652,44 @@ def generate_reply_with_algorithm(
     
     # 如果用户点击了满意度按钮，根据反馈调整阶段
     is_satisfaction_entering_inviting = False  # 标记是否通过满意度反馈进入inviting阶段
-    if is_satisfaction_feedback and conversation_state.conversationStage == "summarizing":
-        if satisfaction_value:
-            # 用户满意，进入inviting阶段，但不立即生成卡片，只显示按钮
-            conversation_state.conversationStage = "inviting"
-            stage = "inviting"
-            should_show_button = True
-            should_show_satisfaction_buttons = False
-            is_satisfaction_entering_inviting = True  # 标记这是通过满意度反馈进入的
+    if is_satisfaction_feedback:
+        # 检查当前阶段是否为summarizing，或者如果状态不明确，也允许处理满意度反馈
+        current_stage = conversation_state.conversationStage if conversation_state else None
+        if current_stage == "summarizing" or (current_stage is None and len([m for m in messages if m.role == "user"]) >= 4):
+            if satisfaction_value:
+                # 用户满意，进入inviting阶段，但不立即生成卡片，只显示按钮
+                conversation_state.conversationStage = "inviting"
+                stage = "inviting"
+                should_show_button = True
+                should_show_satisfaction_buttons = False
+                is_satisfaction_entering_inviting = True  # 标记这是通过满意度反馈进入的
+            else:
+                # 用户不满意，返回exploring阶段，重新探索
+                conversation_state.conversationStage = "exploring"
+                # 计算当前轮次，但保持在exploring阶段
+                turn_count = len([m for m in messages if m.role == "user"])
+                # 如果轮次已经超过3，保持在exploring但使用当前轮次
+                conversation_state.turnCount = max(2, min(turn_count, 3))  # 保持在2-3之间，表示exploring阶段
+                stage = "exploring"
+                should_show_button = False
+                should_show_satisfaction_buttons = False
         else:
-            # 用户不满意，返回exploring阶段，重新探索
-            conversation_state.conversationStage = "exploring"
-            # 计算当前轮次，但保持在exploring阶段
-            turn_count = len([m for m in messages if m.role == "user"])
-            # 如果轮次已经超过3，保持在exploring但使用当前轮次
-            conversation_state.turnCount = max(2, min(turn_count, 3))  # 保持在2-3之间，表示exploring阶段
-            stage = "exploring"
-            should_show_button = False
-            should_show_satisfaction_buttons = False
+            # 如果不在summarizing阶段但收到了满意度反馈，可能是状态不同步
+            # 为了安全，如果用户点击满意，也进入inviting但不生成卡片
+            if satisfaction_value:
+                conversation_state.conversationStage = "inviting"
+                stage = "inviting"
+                should_show_button = True
+                should_show_satisfaction_buttons = False
+                is_satisfaction_entering_inviting = True
+            else:
+                # 不满意时，进入exploring阶段
+                conversation_state.conversationStage = "exploring"
+                turn_count = len([m for m in messages if m.role == "user"])
+                conversation_state.turnCount = max(2, min(turn_count, 3))
+                stage = "exploring"
+                should_show_button = False
+                should_show_satisfaction_buttons = False
     else:
         # 计算当前轮次（用户轮数），用于阶段控制
         turn_count = len([m for m in messages if m.role == "user"])
@@ -691,10 +711,11 @@ def generate_reply_with_algorithm(
     # 高风险时强制使用crisis_safe风格
     style = select_style(user_profile, parsed)
     
-    # 5. 判断是否在引导阶段（chatting/exploring/summarizing）
+    # 5. 判断是否在引导阶段（chatting/exploring/summarizing/inviting）
     # 引导阶段不执行5步生成，只进行普通对话
-    # 注意：如果通过满意度反馈进入inviting阶段，也视为引导阶段，不生成卡片
-    is_guiding_phase = stage in ["chatting", "exploring", "summarizing"] or is_satisfaction_entering_inviting
+    # 注意：inviting阶段（阶段4）只显示按钮，不生成卡片，只有用户点击按钮后才生成
+    # 如果通过满意度反馈进入inviting阶段，也视为引导阶段，不生成卡片
+    is_guiding_phase = stage in ["chatting", "exploring", "summarizing", "inviting"] or is_satisfaction_entering_inviting
     
     if is_guiding_phase:
         # 引导阶段：只进行普通对话，不执行5步生成
