@@ -78,6 +78,8 @@ export default {
     avgIntensity: 'Average Intensity',
     topics: 'Topics',
     representativeMessages: 'Representative Messages',
+    dailyJournal: 'Daily Journal',
+    messages: 'messages',
     you: 'You',
     assistant: 'Assistant',
   },

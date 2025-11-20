@@ -81,7 +81,57 @@
               </div>
             </div>
 
-            <div v-if="detail.messages && detail.messages.length > 0" class="messages-section">
+            <!-- 按主题聚合的日记内容 -->
+            <div v-if="detail.topic_groups && detail.topic_groups.length > 0" class="topics-journal-section">
+              <h3 class="section-title">{{ $t('journal.dailyJournal') }}</h3>
+              <div class="topic-groups-list">
+                <div
+                  v-for="(topicGroup, index) in detail.topic_groups"
+                  :key="index"
+                  class="topic-group-card"
+                >
+                  <div class="topic-group-header">
+                    <div class="topic-group-title-wrapper">
+                      <h4 class="topic-group-title">{{ topicGroup.topic }}</h4>
+                      <span class="topic-message-count">{{ topicGroup.message_count }} {{ $t('journal.messages') }}</span>
+                    </div>
+                    <div v-if="topicGroup.emotion_summary" class="topic-emotion-badge">
+                      <span class="emotion-dot" :style="{ backgroundColor: getEmotionColorHex(topicGroup.emotion_summary) }"></span>
+                      <span class="emotion-text">{{ getEmotionLabel(topicGroup.emotion_summary) }}</span>
+                    </div>
+                  </div>
+                  <div class="topic-messages-list">
+                    <div
+                      v-for="msg in topicGroup.messages"
+                      :key="msg.id"
+                      :class="[
+                        'topic-message-card',
+                        msg.role === 'user' ? 'message-user' : 'message-assistant',
+                      ]"
+                    >
+                      <div class="message-header">
+                        <span class="message-role">
+                          {{ msg.role === 'user' ? $t('journal.you') : $t('journal.assistant') }}
+                        </span>
+                        <span class="message-time">
+                          {{ formatTime(msg.created_at) }}
+                        </span>
+                      </div>
+                      <p class="message-body">{{ msg.content }}</p>
+                      <div v-if="msg.emotion" class="message-emotion">
+                        <span class="emotion-indicator">{{ getEmotionLabel(msg.emotion) }}</span>
+                        <span v-if="msg.intensity" class="intensity-indicator">
+                          {{ msg.intensity }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 如果没有主题分组，回退到原来的消息列表 -->
+            <div v-else-if="detail.messages && detail.messages.length > 0" class="messages-section">
               <h3 class="section-title">{{ $t('journal.representativeMessages') }}</h3>
               <div class="messages-list">
                 <div
@@ -132,6 +182,7 @@ import {
   getDailyDetail,
   type DailySummaryItem,
   type DailyDetailResponse,
+  type TopicGroup,
 } from '@/lib/api'
 
 const { t, locale } = useI18n()
@@ -763,6 +814,173 @@ const formatTime = (dateStr: string) => {
 
 .empty-text-large {
   font-size: 1.1rem;
+}
+
+/* 主题聚合日记样式 */
+.topics-journal-section {
+  margin-top: 2rem;
+}
+
+.topic-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.topic-group-card {
+  background: linear-gradient(135deg, rgba(255, 250, 245, 0.8) 0%, rgba(255, 245, 245, 0.6) 100%);
+  border: 2px solid rgba(255, 182, 193, 0.2);
+  border-radius: 20px;
+  padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 12px rgba(255, 182, 193, 0.1);
+  position: relative;
+  overflow: hidden;
+  animation: slideInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.topic-group-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #FFB6C1 0%, #FFA07A 50%, #FFB6C1 100%);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s ease;
+}
+
+.topic-group-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(255, 182, 193, 0.2);
+  border-color: rgba(255, 182, 193, 0.4);
+}
+
+.topic-group-card:hover::before {
+  transform: scaleX(1);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.topic-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid rgba(255, 182, 193, 0.15);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.topic-group-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.topic-group-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #D9779F 0%, #C97A9A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.topic-message-count {
+  font-size: 0.85rem;
+  color: #A68A8A;
+  background: rgba(255, 182, 193, 0.15);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.topic-emotion-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 6px 14px;
+  background: rgba(255, 182, 193, 0.15);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 182, 193, 0.3);
+}
+
+.emotion-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  border: 2px solid white;
+}
+
+.emotion-text {
+  font-size: 0.85rem;
+  color: #8B6F7E;
+  font-weight: 600;
+}
+
+.topic-messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.topic-message-card {
+  padding: 1.25rem;
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-left: 3px solid;
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 1px 6px rgba(255, 182, 193, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.topic-message-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 182, 193, 0.4), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+
+.topic-message-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 16px rgba(255, 182, 193, 0.15);
+}
+
+.topic-message-card:hover::before {
+  transform: translateX(100%);
+}
+
+.topic-message-card.message-user {
+  border-left-color: #FFB6C1;
+  background: linear-gradient(135deg, rgba(255, 182, 193, 0.08) 0%, rgba(255, 218, 185, 0.08) 100%);
+}
+
+.topic-message-card.message-assistant {
+  border-left-color: rgba(255, 182, 193, 0.25);
+  background: rgba(255, 250, 245, 0.5);
 }
 </style>
 

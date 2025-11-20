@@ -78,6 +78,8 @@ export default {
     avgIntensity: '平均强度',
     topics: '主题',
     representativeMessages: '代表性消息',
+    dailyJournal: '今日日记',
+    messages: '条消息',
     you: '你',
     assistant: '助手',
   },

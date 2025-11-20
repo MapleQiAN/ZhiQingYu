@@ -8,7 +8,7 @@ from datetime import date, datetime
 from typing import Optional
 from app.db import get_db
 from app.models import DailySummary, Message
-from app.schemas.daily import DailySummaryItem, DailyListResponse, DailyDetailResponse
+from app.schemas.daily import DailySummaryItem, DailyListResponse, DailyDetailResponse, TopicGroup
 from app.schemas.message import MessageItem
 from app.schemas.common import ApiResponse, ErrorDetail
 
@@ -70,33 +70,21 @@ async def get_daily_detail(
     db: Session = Depends(get_db)
 ):
     """
-    获取单日详情
+    获取单日详情，按主题聚合消息
     """
     try:
+        from collections import defaultdict
+        
         # 解析日期
         target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
         
         # 查询摘要
         summary = db.query(DailySummary).filter(DailySummary.date == target_date).first()
         
-        if not summary:
-            # 如果没有摘要，返回空数据
-            return ApiResponse(
-                data=DailyDetailResponse(
-                    date=target_date,
-                    summary_text=None,
-                    main_emotion=None,
-                    avg_intensity=None,
-                    main_topics=None,
-                    messages=[]
-                ),
-                error=None
-            )
-        
-        # 查询当天的代表性消息（最多5条）
+        # 查询当天的所有消息
         messages = db.query(Message).filter(
             func.date(Message.created_at) == target_date
-        ).order_by(Message.created_at.asc()).limit(5).all()
+        ).order_by(Message.created_at.asc()).all()
         
         message_items = [
             MessageItem(
@@ -111,6 +99,83 @@ async def get_daily_detail(
             for msg in messages
         ]
         
+        # 按主题分组消息
+        topic_groups_dict = defaultdict(list)
+        topic_emotions = defaultdict(list)  # 记录每个主题下的情绪
+        
+        for msg_item in message_items:
+            # 如果消息有主题，将消息添加到对应主题组
+            if msg_item.topics and len(msg_item.topics) > 0:
+                for topic in msg_item.topics:
+                    topic_groups_dict[topic].append(msg_item)
+                    if msg_item.emotion:
+                        topic_emotions[topic].append(msg_item.emotion)
+            else:
+                # 没有主题的消息归到"其他"主题
+                topic_groups_dict["其他"].append(msg_item)
+                if msg_item.emotion:
+                    topic_emotions["其他"].append(msg_item.emotion)
+        
+        # 构建主题分组列表
+        topic_groups = []
+        # 优先使用summary中的main_topics顺序
+        main_topics = summary.main_topics if summary and summary.main_topics else []
+        
+        # 先添加main_topics中的主题
+        processed_topics = set()
+        for topic in main_topics:
+            if topic in topic_groups_dict:
+                # 计算该主题的主要情绪
+                emotions = topic_emotions.get(topic, [])
+                emotion_summary = None
+                if emotions:
+                    # 统计情绪频率
+                    emotion_counts = {}
+                    for emo in emotions:
+                        emotion_counts[emo] = emotion_counts.get(emo, 0) + 1
+                    emotion_summary = max(emotion_counts.items(), key=lambda x: x[1])[0] if emotion_counts else None
+                
+                topic_groups.append(TopicGroup(
+                    topic=topic,
+                    messages=topic_groups_dict[topic],
+                    emotion_summary=emotion_summary,
+                    message_count=len(topic_groups_dict[topic])
+                ))
+                processed_topics.add(topic)
+        
+        # 添加其他主题（不在main_topics中的）
+        for topic, msgs in topic_groups_dict.items():
+            if topic not in processed_topics:
+                emotions = topic_emotions.get(topic, [])
+                emotion_summary = None
+                if emotions:
+                    emotion_counts = {}
+                    for emo in emotions:
+                        emotion_counts[emo] = emotion_counts.get(emo, 0) + 1
+                    emotion_summary = max(emotion_counts.items(), key=lambda x: x[1])[0] if emotion_counts else None
+                
+                topic_groups.append(TopicGroup(
+                    topic=topic,
+                    messages=msgs,
+                    emotion_summary=emotion_summary,
+                    message_count=len(msgs)
+                ))
+        
+        # 如果没有摘要，返回空数据
+        if not summary:
+            return ApiResponse(
+                data=DailyDetailResponse(
+                    date=target_date,
+                    summary_text=None,
+                    main_emotion=None,
+                    avg_intensity=None,
+                    main_topics=None,
+                    messages=message_items,
+                    topic_groups=topic_groups
+                ),
+                error=None
+            )
+        
         return ApiResponse(
             data=DailyDetailResponse(
                 date=summary.date,
@@ -118,7 +183,8 @@ async def get_daily_detail(
                 main_emotion=summary.main_emotion,
                 avg_intensity=summary.avg_intensity,
                 main_topics=summary.main_topics,
-                messages=message_items
+                messages=message_items,  # 保留原有字段以兼容
+                topic_groups=topic_groups
             ),
             error=None
         )

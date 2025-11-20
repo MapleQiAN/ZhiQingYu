@@ -84,13 +84,21 @@ export interface MessageItem {
   created_at: string
 }
 
+export interface TopicGroup {
+  topic: string
+  messages: MessageItem[]
+  emotion_summary: string | null
+  message_count: number
+}
+
 export interface DailyDetailResponse {
   date: string
   summary_text: string | null
   main_emotion: string | null
   avg_intensity: number | null
   main_topics: string[] | null
-  messages: MessageItem[]
+  messages: MessageItem[]  // 保留以兼容
+  topic_groups: TopicGroup[]  // 新增：按主题分组
 }
 
 export interface EmotionStatsOverview {
