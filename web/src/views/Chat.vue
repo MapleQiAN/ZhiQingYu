@@ -113,7 +113,10 @@
       <!-- 聊天记录区域 -->
       <div class="messages-container">
       <div v-if="messages.length === 0" class="welcome-section">
-        <div class="welcome-icon">🌺</div>
+        <div class="app-logo-wrapper">
+          <img src="../logo/logo.png" alt="Logo" class="welcome-icon" />
+          <div class="logo-glow"></div>
+        </div>
         <p class="welcome-title">{{ $t('chat.welcome') }}</p>
         <p class="welcome-desc">{{ $t('chat.welcomeDesc') }}</p>
       </div>
@@ -123,9 +126,9 @@
         :key="index"
         :class="['message-wrapper', msg.role === 'user' ? 'user-message' : 'assistant-message']"
       >
-        <!-- 用户消息：普通气泡 -->
+        <!-- 用户消息：普通气泡（过滤掉满意度反馈的特殊消息） -->
         <div
-          v-if="msg.role === 'user'"
+          v-if="msg.role === 'user' && !msg.content.startsWith('[SATISFACTION:')"
           :class="[
             'message-bubble',
             'user-bubble',
@@ -170,6 +173,35 @@
             class="guiding-card"
           >
             <p class="guiding-card-content">{{ msg.content }}</p>
+          </div>
+          
+          <!-- 满意度按钮：显示在AI消息气泡下方 -->
+          <div v-if="msg.should_show_satisfaction_buttons && sessionId" class="satisfaction-buttons-in-message">
+            <div class="satisfaction-buttons">
+              <n-button
+                type="primary"
+                size="large"
+                :loading="loading"
+                @click="handleSatisfaction(true)"
+                class="satisfaction-button satisfaction-button-yes"
+              >
+                <template #icon>
+                  <span>👍</span>
+                </template>
+                你说到了我的心里
+              </n-button>
+              <n-button
+                size="large"
+                :loading="loading"
+                @click="handleSatisfaction(false)"
+                class="satisfaction-button satisfaction-button-no"
+              >
+                <template #icon>
+                  <span>👎</span>
+                </template>
+                我觉得我还需要再多跟你说一些
+              </n-button>
+            </div>
           </div>
         </div>
       </div>
@@ -344,6 +376,7 @@ let previousBodyOverflow = ''
 const templateSelectVisible = ref(false)
 const currentExportCardData = ref<CardData | null>(null)
 const shouldShowCardButton = ref(false)
+const shouldShowSatisfactionButtons = ref(false)
 
 // 体验模式选项（使用computed确保国际化文本正确更新）
 const experienceModes = computed(() => [
@@ -438,6 +471,7 @@ const handleSwitchSession = async (id: string) => {
       // 检查最后一条assistant消息是否应该显示按钮
       const lastAssistantMsg = [...response.data.messages].reverse().find(msg => msg.role === 'assistant')
       shouldShowCardButton.value = lastAssistantMsg?.should_show_card_button || false
+      shouldShowSatisfactionButtons.value = lastAssistantMsg?.should_show_satisfaction_buttons || false
       scrollToBottom()
     }
   } catch (error) {
@@ -459,6 +493,7 @@ const handleNewChat = () => {
   selectedChatMode.value = 'deep'
   lastRiskLevel.value = 'normal'
   shouldShowCardButton.value = false
+  shouldShowSatisfactionButtons.value = false
 }
 
 // 删除会话
@@ -592,12 +627,14 @@ const handleSend = async () => {
         content: data.reply,
         card_data: data.card_data || null,
         should_show_card_button: data.should_show_card_button || false,
+        should_show_satisfaction_buttons: data.should_show_satisfaction_buttons || false,
       }
 
       messages.value = [...newMessages, assistantMessage]
       
       // 更新是否显示"开始关心"按钮的状态
       shouldShowCardButton.value = data.should_show_card_button || false
+      shouldShowSatisfactionButtons.value = data.should_show_satisfaction_buttons || false
       scrollToBottom()
       // 刷新会话列表
       loadSessions()
@@ -621,6 +658,83 @@ const handleKeyPress = (e: KeyboardEvent) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
     handleSend()
+  }
+}
+
+// 处理满意度按钮点击
+const handleSatisfaction = async (satisfied: boolean) => {
+  if (!sessionId.value) {
+    message.error(t('chat.noSession') || '没有会话ID')
+    return
+  }
+
+  loading.value = true
+  
+  // 立即隐藏最后一条AI消息的满意度按钮，防止重复点击
+  const lastAssistantMsg = [...messages.value].reverse().find(msg => msg.role === 'assistant')
+  if (lastAssistantMsg) {
+    lastAssistantMsg.should_show_satisfaction_buttons = false
+  }
+  
+  try {
+    // 发送特殊消息，表示用户对小结的满意度
+    // 注意：这个消息不会显示给用户，只是用于后端处理
+    const satisfactionMessage: ChatMessage = {
+      role: 'user',
+      content: satisfied ? '[SATISFACTION:满意]' : '[SATISFACTION:不满意]',
+    }
+
+    const newMessages = [...messages.value, satisfactionMessage]
+    // 不立即更新messages，等后端回复后再更新，这样特殊消息不会显示
+
+    const response = await sendChatMessage({
+      session_id: sessionId.value,
+      messages: newMessages,
+      experience_mode: selectedExperienceMode.value,
+      ai_style: selectedAIStyle.value,
+      chat_mode: selectedChatMode.value,
+    })
+
+    if (response.error) {
+      console.error('API Error:', response.error)
+      message.error(`${t('common.error')}: ${response.error.message}`)
+      return
+    }
+
+      if (response.data) {
+      const data = response.data
+      sessionId.value = data.session_id
+      todayEmotion.value = data.emotion
+      lastRiskLevel.value = data.risk_level
+
+      const assistantMessage: ChatMessage = {
+        role: 'assistant',
+        content: data.reply,
+        card_data: data.card_data || null,
+        should_show_card_button: data.should_show_card_button || false,
+        should_show_satisfaction_buttons: data.should_show_satisfaction_buttons || false,
+      }
+
+      // 对于满意度反馈，不显示用户的特殊消息，只显示AI的回复
+      // 这样界面更干净，用户体验更好
+      messages.value = [...messages.value, assistantMessage]
+      
+      // 更新按钮状态
+      shouldShowCardButton.value = data.should_show_card_button || false
+      scrollToBottom()
+      // 刷新会话列表
+      loadSessions()
+      
+      // 如果检测到高风险，显示额外提示
+      if (data.risk_level === 'high') {
+        message.warning(t('chat.highRiskDetected'))
+      }
+    }
+  } catch (error) {
+    console.error('Satisfaction feedback failed:', error)
+    message.error(t('chat.sendFailed'))
+  } finally {
+    loading.value = false
   }
 }
 
@@ -655,6 +769,7 @@ const handleGenerateCard = async () => {
 
       messages.value = [...messages.value, assistantMessage]
       shouldShowCardButton.value = false // 隐藏按钮
+      shouldShowSatisfactionButtons.value = false // 隐藏满意度按钮
       scrollToBottom()
       // 刷新会话列表
       loadSessions()
@@ -687,15 +802,32 @@ const openCardFullscreen = (cardData: CardData | null | undefined) => {
     console.warn('openCardFullscreen: cardData is null or undefined')
     return
   }
+  
+  // 检查卡片数据是否有效
+  if (!hasCardData(cardData)) {
+    console.warn('openCardFullscreen: cardData is invalid', cardData)
+    message.warning(t('chat.invalidCardData') || '卡片数据无效')
+    return
+  }
+  
   console.log('Opening fullscreen with card data:', cardData)
-  fullscreenCardData.value = cardData
+  
+  // 使用深拷贝确保数据独立性
+  fullscreenCardData.value = JSON.parse(JSON.stringify(cardData))
   cardFullscreenVisible.value = true
+  
   previousBodyOverflow = document.body.style.overflow
   document.body.style.overflow = 'hidden'
   document.body.classList.add(FULLSCREEN_BODY_CLASS)
+  
   // 确保 DOM 更新
   nextTick(() => {
     console.log('Fullscreen opened, visible:', cardFullscreenVisible.value, 'data:', fullscreenCardData.value)
+    // 确保滚动到顶部
+    const cardElement = document.querySelector('.heart-card-fullscreen')
+    if (cardElement) {
+      cardElement.scrollTop = 0
+    }
   })
 }
 
@@ -1418,11 +1550,36 @@ onUnmounted(() => {
   }
 }
 
-.welcome-icon {
-  font-size: var(--font-size-5xl);
+.app-logo-wrapper {
+  position: relative;
+  display: inline-block;
   margin-bottom: var(--spacing-md);
+}
+
+.welcome-icon {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
   filter: drop-shadow(0 4px 8px rgba(232, 180, 184, 0.3));
   animation: float 3s ease-in-out infinite;
+}
+
+.logo-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(232, 180, 184, 0.2) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
 }
 
 @keyframes float {
@@ -1792,6 +1949,56 @@ onUnmounted(() => {
 .card-button-wrapper {
   margin-bottom: var(--spacing-md);
   animation: slideDown 0.3s ease;
+}
+
+.satisfaction-buttons-wrapper {
+  margin-bottom: var(--spacing-md);
+  animation: slideDown 0.3s ease;
+}
+
+/* 消息内的满意度按钮 */
+.satisfaction-buttons-in-message {
+  margin-top: var(--spacing-md);
+  padding: 0 var(--spacing-md);
+  animation: slideDown 0.3s ease;
+}
+
+.satisfaction-buttons {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+  justify-content: center;
+}
+
+.satisfaction-button {
+  flex: 1;
+  font-weight: var(--font-weight-semibold);
+  transition: all var(--transition-base);
+  border-radius: var(--radius-xl);
+}
+
+.satisfaction-button-yes {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(232, 180, 184, 0.3);
+}
+
+.satisfaction-button-yes:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(232, 180, 184, 0.4);
+}
+
+.satisfaction-button-no {
+  background: var(--bg-elevated) !important;
+  border: var(--border-width-thin) solid var(--border-color-base) !important;
+  color: var(--text-primary) !important;
+  box-shadow: var(--shadow-sm);
+}
+
+.satisfaction-button-no:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary) !important;
 }
 
 .generate-card-button {
@@ -2271,6 +2478,8 @@ onUnmounted(() => {
   overflow: auto !important;
   margin: 0 !important;
   pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .card-fullscreen-content {
@@ -2315,10 +2524,35 @@ onUnmounted(() => {
   width: 100% !important;
   flex: 1 !important;
   min-height: 0 !important;
+  max-height: 100% !important;
   overflow-y: auto !important;
-  padding: 48px 32px !important;
+  overflow-x: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
   border-radius: 24px !important;
   box-sizing: border-box !important;
+  position: relative !important;
+  z-index: 1 !important;
+  display: block !important;
+}
+
+/* 覆盖 HeartCard 组件内部的样式，确保在全屏模式下正确显示 */
+.heart-card-fullscreen :deep(.heart-card) {
+  width: 100% !important;
+  min-height: 100% !important;
+  padding: 48px 32px !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  display: block !important;
+  position: relative !important;
+}
+
+/* 确保卡片内容区域可见 */
+.heart-card-fullscreen :deep(.card-content) {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* 过渡动画 */
@@ -2331,5 +2565,13 @@ onUnmounted(() => {
 .fade-leave-to {
   opacity: 0;
 }
+
+/* 确保过渡期间内容仍然可见 */
+.fade-enter-active .card-fullscreen-content,
+.fade-leave-active .card-fullscreen-content {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
 </style>
+
 
