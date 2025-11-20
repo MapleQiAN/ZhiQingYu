@@ -12,6 +12,7 @@ from app.core.intervention_manager import get_intervention_manager
 from app.core.step_controller import StepController
 from app.core.five_step_planner import FiveStepPlanner
 from app.core.risk_detection import detect_self_harm_keywords, detect_violence_keywords
+from app.core.emotion_parser_adapter import parse_user_message as parse_user_message_with_adapter
 
 
 # 预定义的干预模块（带描述信息，用于构建prompt）
@@ -222,8 +223,13 @@ def integrate_and_optimize_conversation(
     last_user_message = user_messages[-1] if user_messages else None
     
     if last_user_message:
-        # 使用最后一条用户消息，但传入完整历史进行解析
-        optimized_parsed = parse_user_message(last_user_message, history=messages[:-1])
+        # 使用最后一条用户消息，但传入完整历史进行解析（使用增强版解析器）
+        optimized_parsed = parse_user_message_with_adapter(
+            last_user_message,
+            history=messages[:-1],
+            llm_provider=llm_provider,
+            use_enhanced=True
+        )
     else:
         # 如果没有用户消息，创建默认解析
         optimized_parsed = ParsedState(
@@ -633,8 +639,13 @@ def generate_reply_with_algorithm(
     # 2. 判断用户是否发出了风格或模式相关指令（已在user_profile中处理）
     # 这里可以进一步检测用户输入中的模式切换指令
     
-    # 3. 执行情绪解析与风险检测
-    parsed = parse_user_message(user_message, history=messages[:-1] if len(messages) > 1 else [])
+    # 3. 执行情绪解析与风险检测（使用适配器，支持增强版解析器）
+    parsed = parse_user_message_with_adapter(
+        user_message,
+        history=messages[:-1] if len(messages) > 1 else [],
+        llm_provider=llm_provider,
+        use_enhanced=True  # 启用增强版解析器
+    )
     
     # 3.5. 更新对话轮数和阶段
     if not conversation_state:
@@ -856,7 +867,12 @@ def generate_reply_with_algorithm(
         correction_keywords = ["不对", "不是", "漏了", "还有", "其实", "应该是", "更准确", "更贴切", "纠正", "补充"]
         if any(kw in user_message.content for kw in correction_keywords):
             # 用户提供了校正，重新解析用户消息以更新结构化信息
-            corrected_parsed = parse_user_message(user_message, history=messages[:-1])
+            corrected_parsed = parse_user_message_with_adapter(
+                user_message,
+                history=messages[:-1],
+                llm_provider=llm_provider,
+                use_enhanced=True
+            )
             if corrected_parsed.emotions:
                 updated_state.structuredInfo["emotion_primary"] = corrected_parsed.emotions[0]
             updated_state.structuredInfo["emotion_intensity"] = corrected_parsed.intensity
