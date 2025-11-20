@@ -6,7 +6,7 @@
           <div class="header-content">
             <div class="logo-section group cursor-pointer" @click="router.push('/')">
               <div class="app-logo-wrapper">
-                <div class="app-logo">🌺</div>
+                <img src="../logo/logo.png" alt="Logo" class="app-logo" />
                 <div class="logo-glow"></div>
               </div>
               <div class="title-wrapper">
@@ -220,8 +220,9 @@ const handleLocaleSelect = (key: string | number) => {
 }
 
 .app-logo {
-  font-size: var(--font-size-4xl);
-  line-height: var(--line-height-tight);
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
   filter: drop-shadow(0 3px 6px rgba(232, 180, 184, 0.4));
   transition: all var(--transition-smooth);
   position: relative;
@@ -511,7 +512,8 @@ const handleLocaleSelect = (key: string | number) => {
   }
   
   .app-logo {
-    font-size: 28px;
+    width: 40px;
+    height: 40px;
   }
   
   .app-title {
@@ -545,7 +547,8 @@ const handleLocaleSelect = (key: string | number) => {
   }
   
   .app-logo {
-    font-size: 24px;
+    width: 36px;
+    height: 36px;
   }
   
   .warm-menu :deep(.n-menu-item) {
