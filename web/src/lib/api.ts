@@ -40,6 +40,7 @@ export interface ChatMessage {
   content: string
   card_data?: CardData | null
   should_show_card_button?: boolean  // 是否显示"开始关心吧！"按钮
+  should_show_satisfaction_buttons?: boolean  // 是否显示"满意/不满意"按钮
 }
 
 export interface ChatRequest {
@@ -59,6 +60,7 @@ export interface ChatResponse {
   risk_level: 'normal' | 'high'  // 后端返回的是normal/high，但内部可能是low/medium/high
   card_data?: CardData | null
   should_show_card_button?: boolean  // 是否显示"开始关心吧！"按钮
+  should_show_satisfaction_buttons?: boolean  // 是否显示"满意/不满意"按钮
 }
 
 export interface DailySummaryItem {
