@@ -544,10 +544,13 @@ def determine_conversation_stage(
         return "card_generated", False, False
 
     # 按轮次推进阶段，确保 exploring 最多两轮
+    # 重要：当从chatting进入exploring时，需要确保状态正确更新
+    # 如果conversation_state存在但stage是chatting，且turn_count是2或3，说明是第一次进入exploring
     if current_stage == "chatting":
         if turn_count == 1:
             return "chatting", False, False
         # 从第2轮开始进入 exploring
+        # 修复：确保第一次进入exploring时，状态能正确更新，避免重复判断
         if turn_count == 2 or turn_count == 3:
             return "exploring", False, False
         if turn_count == 4:
@@ -556,6 +559,7 @@ def determine_conversation_stage(
 
     if current_stage == "exploring":
         # exploring 固定两轮：当轮次 >=4 时自动进入 summarizing
+        # 注意：这里需要确保turn_count是基于实际消息计算的，避免重复判断
         if turn_count <= 3:
             return "exploring", False, False
         if turn_count == 4:
@@ -647,13 +651,15 @@ def generate_reply_with_algorithm(
             satisfaction_value = False
     
     # 如果用户点击了满意度按钮，根据反馈调整阶段
+    is_satisfaction_entering_inviting = False  # 标记是否通过满意度反馈进入inviting阶段
     if is_satisfaction_feedback and conversation_state.conversationStage == "summarizing":
         if satisfaction_value:
-            # 用户满意，直接进入inviting阶段
+            # 用户满意，进入inviting阶段，但不立即生成卡片，只显示按钮
             conversation_state.conversationStage = "inviting"
             stage = "inviting"
             should_show_button = True
             should_show_satisfaction_buttons = False
+            is_satisfaction_entering_inviting = True  # 标记这是通过满意度反馈进入的
         else:
             # 用户不满意，返回exploring阶段，重新探索
             conversation_state.conversationStage = "exploring"
@@ -676,6 +682,9 @@ def generate_reply_with_algorithm(
             parsed,
             messages
         )
+        
+        # 立即更新状态，确保状态同步
+        # 重要：在判断阶段后立即更新状态，避免在同一个请求中重复判断
         conversation_state.conversationStage = stage
     
     # 4. 根据风险程度、用户偏好与场景，选择当前风格
@@ -684,7 +693,8 @@ def generate_reply_with_algorithm(
     
     # 5. 判断是否在引导阶段（chatting/exploring/summarizing）
     # 引导阶段不执行5步生成，只进行普通对话
-    is_guiding_phase = stage in ["chatting", "exploring", "summarizing"]
+    # 注意：如果通过满意度反馈进入inviting阶段，也视为引导阶段，不生成卡片
+    is_guiding_phase = stage in ["chatting", "exploring", "summarizing"] or is_satisfaction_entering_inviting
     
     if is_guiding_phase:
         # 引导阶段：只进行普通对话，不执行5步生成
