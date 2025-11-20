@@ -20,8 +20,74 @@ class ClaudeProvider(JsonChatLLMProvider):
         if not self.api_key:
             raise ValueError("API key is required for Claude provider")
 
+    def _perform_text_completion(self, chat_messages: List[Dict[str, str]]) -> str | dict:
+        """
+        执行纯文本生成（不要求 JSON 格式）
+        """
+        try:
+            # Claude API使用messages格式，需要分离system message
+            messages = []
+            system_message = None
+            
+            for msg in chat_messages:
+                if msg["role"] == "system":
+                    system_message = msg["content"]
+                elif msg["role"] in ["user", "assistant"]:
+                    messages.append({
+                        "role": msg["role"],
+                        "content": msg["content"]
+                    })
+
+            url = f"{self.base_url}/messages"
+            headers = {
+                "x-api-key": self.api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json"
+            }
+
+            payload = {
+                "model": self.model,
+                "max_tokens": 500,
+                "temperature": 0.7,
+                "messages": messages,
+            }
+            
+            if system_message:
+                payload["system"] = system_message
+
+            with httpx.Client(timeout=60.0) as client:
+                response = client.post(url, headers=headers, json=payload)
+                response.raise_for_status()
+                
+                result_data = response.json()
+                # Claude返回格式：content[0].text
+                if "content" in result_data and len(result_data["content"]) > 0:
+                    result_text = result_data["content"][0]["text"]
+                    
+                    # 提取tokens使用信息
+                    usage = result_data.get("usage", {})
+                    if usage:
+                        return {
+                            "text": result_text,
+                            "usage": {
+                                "prompt_tokens": usage.get("input_tokens", 0),
+                                "completion_tokens": usage.get("output_tokens", 0),
+                                "total_tokens": usage.get("input_tokens", 0) + usage.get("output_tokens", 0),
+                            }
+                        }
+                    return result_text
+                
+                raise ValueError(f"Unexpected Claude API response format: {result_data}")
+        except Exception as e:
+            self.logger.error(f"[Claude Provider] 文本生成失败: {str(e)}", exc_info=True)
+            raise
+
     def _perform_chat_completion(self, chat_messages: List[Dict[str, str]], mode: str) -> str | dict:
         """调用Claude API"""
+        # 如果是 text 模式，使用文本生成方法
+        if mode == "text":
+            return self._perform_text_completion(chat_messages)
+        
         # Claude API使用messages格式，需要分离system message
         messages = []
         system_message = None

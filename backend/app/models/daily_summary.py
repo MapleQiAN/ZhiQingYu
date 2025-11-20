@@ -15,6 +15,7 @@ class DailySummary(Base):
     main_emotion = Column(String, nullable=True)  # 主要情绪标签
     avg_intensity = Column(Float, nullable=True)  # 平均强度
     main_topics = Column(JSON, nullable=True)  # 主题列表
+    is_edited = Column(Integer, default=0, nullable=False)  # 是否被用户编辑过（0=未编辑，1=已编辑）
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

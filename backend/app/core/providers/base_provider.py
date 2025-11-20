@@ -252,6 +252,41 @@ class JsonChatLLMProvider(LLMProvider):
                 "usage": {}
             }
 
+    def generate_text(self, messages: List[ChatMessage]) -> str | None:
+        """
+        生成纯文本回复（不要求 JSON 格式）
+        
+        Args:
+            messages: 对话消息列表（包含 system message）
+            
+        Returns:
+            生成的文本，如果失败则返回 None
+        """
+        try:
+            # 将消息转换为字典格式
+            formatted_messages = []
+            for msg in messages:
+                formatted_messages.append({
+                    "role": msg.role,
+                    "content": msg.content
+                })
+            
+            # 调用 _perform_text_completion（如果存在）或 _perform_chat_completion
+            if hasattr(self, '_perform_text_completion'):
+                result = self._perform_text_completion(formatted_messages)
+            else:
+                # 回退到 _perform_chat_completion，但使用 "text" 模式
+                result = self._perform_chat_completion(formatted_messages, mode="text")
+            
+            if isinstance(result, dict):
+                return result.get("text", "").strip()
+            elif isinstance(result, str):
+                return result.strip()
+            return None
+        except Exception as e:
+            self.logger.exception(f"[Text Generation] 生成文本失败: {str(e)}")
+            return None
+
     @abstractmethod
     def _perform_chat_completion(self, chat_messages: List[Dict[str, str]], mode: str) -> str | dict:
         """
