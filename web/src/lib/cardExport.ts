@@ -1244,7 +1244,6 @@ export const generateCardHtml = (cardData: CardData, template: CardTemplate = 'b
   const date = formatDate()
   const useThreePart = shouldUseThreePart(cardData)
   const sectionsHtml = useThreePart ? buildThreePartSections(cardData) : buildFiveStepSections(cardData)
-  const userQuestion = cardData.user_question?.trim()
   const templateStyles = getTemplateStyles(template)
   const commonStyles = getCommonStyles()
 
