@@ -34,6 +34,7 @@ class ChatResponse(BaseModel):
     card_data: Optional[dict] = None  # 包含 theme, emotion_echo, clarification, suggestion
     # 多阶段对话流程控制
     should_show_card_button: bool = False  # 是否显示"开始关心吧！"按钮
+    should_show_satisfaction_buttons: bool = False  # 是否显示"满意/不满意"按钮（阶段3完成后）
 
 
 class SessionItem(BaseModel):

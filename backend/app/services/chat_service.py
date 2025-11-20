@@ -225,7 +225,8 @@ class ChatService:
             "topics": llm_result.topics,
             "risk_level": api_risk_level,  # 映射后的风险级别（保持API兼容）
             "card_data": llm_result.card_data,
-            "should_show_card_button": getattr(llm_result, "should_show_card_button", False)  # 是否显示"开始关心吧！"按钮
+            "should_show_card_button": getattr(llm_result, "should_show_card_button", False),  # 是否显示"开始关心吧！"按钮
+            "should_show_satisfaction_buttons": getattr(llm_result, "should_show_satisfaction_buttons", False)  # 是否显示"满意/不满意"按钮
         }
     
     def _update_daily_summary(self, target_date: date, emotion: str, intensity: int, topics: list[str]):
