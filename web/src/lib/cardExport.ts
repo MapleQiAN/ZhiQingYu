@@ -1266,7 +1266,6 @@ export const generateCardHtml = (cardData: CardData, template: CardTemplate = 'b
           <div class="card-theme">${title}</div>
           <div class="card-tagline">LOVE · YOURSELF · MOMENTS</div>
           <div class="card-date">${date}</div>
-          ${userQuestion ? `<div class="card-question">${renderMarkdown(userQuestion)}</div>` : ''}
         </header>
         ${sectionsHtml}
         <div class="card-footer">
