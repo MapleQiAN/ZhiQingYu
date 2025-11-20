@@ -49,26 +49,24 @@ const renderArrayOrString = (value?: string[] | string | null) => {
 
 const renderDoubleColumn = (left?: string | null, right?: string | null) => {
   if (!left && !right) return ''
-  return `
-    <div class="card-two-column">
-      ${
-        left
-          ? `<div class="card-two-column__item">
-              <div class="card-label">情绪镜像</div>
-              <div class="card-markdown">${renderMarkdown(left)}</div>
-            </div>`
-          : ''
-      }
-      ${
-        right
-          ? `<div class="card-two-column__item">
-              <div class="card-label">问题复述</div>
-              <div class="card-markdown">${renderMarkdown(right)}</div>
-            </div>`
-          : ''
-      }
-    </div>
-  `
+  const parts = []
+  if (left) {
+    parts.push(`
+      <div class="card-content-block">
+        <div class="card-label">情绪镜像</div>
+        <div class="card-markdown">${renderMarkdown(left)}</div>
+      </div>
+    `)
+  }
+  if (right) {
+    parts.push(`
+      <div class="card-content-block">
+        <div class="card-label">问题复述</div>
+        <div class="card-markdown">${renderMarkdown(right)}</div>
+      </div>
+    `)
+  }
+  return parts.join('')
 }
 
 const buildSection = (options: {
@@ -259,10 +257,11 @@ const getTemplateStyles = (template: CardTemplate): string => {
         color: rgba(0, 0, 0, 0.75);
         font-size: 1rem;
       }
-      .card-two-column {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 20px;
+      .card-content-block {
+        margin-bottom: 20px;
+      }
+      .card-content-block:last-child {
+        margin-bottom: 0;
       }
       .card-label {
         font-size: 0.85rem;
@@ -1178,10 +1177,11 @@ const getCommonStyles = (): string => {
         color: rgba(0, 0, 0, 0.75);
         font-size: 1rem;
       }
-      .card-two-column {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 20px;
+      .card-content-block {
+        margin-bottom: 20px;
+      }
+      .card-content-block:last-child {
+        margin-bottom: 0;
       }
       .card-label {
         font-size: 0.85rem;
