@@ -26,6 +26,7 @@ class TopicGroup(BaseModel):
     messages: list[MessageItem] = []
     emotion_summary: Optional[str] = None  # 该主题下的主要情绪
     message_count: int = 0
+    narrative_summary: Optional[str] = None  # 叙事式摘要（将对话转换为连贯的叙事文本）
 
 
 class DailyDetailResponse(BaseModel):

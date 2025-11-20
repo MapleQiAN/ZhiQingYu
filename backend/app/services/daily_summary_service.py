@@ -145,4 +145,68 @@ class DailySummaryService:
         except Exception as e:
             logger.exception(f"[Daily Summary] 生成文本总结时发生错误: {str(e)}")
             return None
+    
+    def generate_topic_narrative(
+        self,
+        topic: str,
+        messages: list[ChatMessage],
+        emotion_summary: str | None = None
+    ) -> str | None:
+        """
+        为特定主题生成叙事式摘要
+        
+        将对话转换为连贯的叙事文本，而不是对话形式
+        
+        Args:
+            topic: 主题名称
+            messages: 该主题下的消息列表
+            emotion_summary: 该主题的主要情绪
+            
+        Returns:
+            生成的叙事式摘要文本，如果生成失败则返回 None
+        """
+        try:
+            if not messages:
+                return None
+            
+            # 只保留用户消息用于生成叙事
+            user_messages = [msg for msg in messages if msg.role == "user"]
+            if not user_messages:
+                return None
+            
+            # 构建提示词
+            emotion_info = f"主要情绪：{emotion_summary}" if emotion_summary else ""
+            prompt = f"""你是一位情绪陪伴助手。请根据用户关于"{topic}"这个主题的对话内容，生成一段连贯的叙事式日记摘要。
+
+要求：
+1. 将对话内容转换为第一人称的叙事文本，就像用户在写日记一样
+2. 语气要自然、真实，不要显得生硬或过于正式
+3. 长度控制在100-200字之间
+4. 要捕捉用户的情绪变化和关键想法
+5. 不要直接引用对话内容，而是用叙述的方式表达
+6. 保持温暖、共情的语调
+7. 如果有多条消息，要体现时间或情绪的变化
+
+主题：{topic}
+{emotion_info}
+
+请直接输出叙事文本，不要包含任何其他说明或格式标记。"""
+            
+            # 构建消息列表
+            system_message = ChatMessage(role="system", content=prompt)
+            llm_messages = [system_message] + user_messages
+            
+            # 调用 LLM 生成叙事文本
+            if hasattr(self.llm_provider, 'generate_text'):
+                result = self.llm_provider.generate_text(llm_messages)
+                if result:
+                    logger.info(f"[Daily Summary] 成功为主题 {topic} 生成叙事式摘要")
+                    return result.strip()
+            
+            logger.warning(f"[Daily Summary] 为主题 {topic} 生成叙事式摘要失败")
+            return None
+            
+        except Exception as e:
+            logger.exception(f"[Daily Summary] 为主题 {topic} 生成叙事式摘要时发生错误: {str(e)}")
+            return None
 

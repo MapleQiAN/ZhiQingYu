@@ -100,7 +100,36 @@
                       <span class="emotion-text">{{ getEmotionLabel(topicGroup.emotion_summary) }}</span>
                     </div>
                   </div>
-                  <div class="topic-messages-list">
+                  
+                  <!-- 叙事式摘要（默认显示） -->
+                  <div v-if="topicGroup.narrative_summary" class="narrative-summary">
+                    <p class="narrative-text">{{ topicGroup.narrative_summary }}</p>
+                  </div>
+                  
+                  <!-- 如果没有叙事式摘要，显示提示 -->
+                  <div v-else class="narrative-summary narrative-placeholder">
+                    <p class="narrative-text">{{ $t('journal.narrativeGenerating') || '正在生成叙事式摘要...' }}</p>
+                  </div>
+                  
+                  <!-- 展开/收起对话按钮 -->
+                  <div class="toggle-messages-wrapper">
+                    <button
+                      @click="toggleTopicMessages(index)"
+                      class="toggle-messages-btn"
+                      :class="{ 'expanded': expandedTopics.has(index) }"
+                    >
+                      <span class="toggle-icon">{{ expandedTopics.has(index) ? '▼' : '▶' }}</span>
+                      <span class="toggle-text">
+                        {{ expandedTopics.has(index) ? ($t('journal.hideConversation') || '收起对话') : ($t('journal.viewConversation') || '查看对话') }}
+                      </span>
+                    </button>
+                  </div>
+                  
+                  <!-- 详细对话（可展开/收起） -->
+                  <div
+                    v-show="expandedTopics.has(index)"
+                    class="topic-messages-list"
+                  >
                     <div
                       v-for="msg in topicGroup.messages"
                       :key="msg.id"
@@ -191,6 +220,7 @@ const dailyList = ref<DailySummaryItem[]>([])
 const selectedDate = ref<string | null>(null)
 const detail = ref<DailyDetailResponse | null>(null)
 const loading = ref(false)
+const expandedTopics = ref<Set<number>>(new Set())  // 记录哪些主题的对话已展开
 
 const dateLocale = computed(() => {
   return locale.value === 'zh' ? zhCN : enUS
@@ -303,6 +333,19 @@ const formatDateFull = (dateStr: string) => {
 const formatTime = (dateStr: string) => {
   return format(parseISO(dateStr), 'HH:mm', { locale: dateLocale.value })
 }
+
+const toggleTopicMessages = (index: number) => {
+  if (expandedTopics.value.has(index)) {
+    expandedTopics.value.delete(index)
+  } else {
+    expandedTopics.value.add(index)
+  }
+}
+
+// 当切换日期时，清空展开状态
+watch(selectedDate, () => {
+  expandedTopics.value.clear()
+})
 </script>
 
 <style scoped>
@@ -981,6 +1024,109 @@ const formatTime = (dateStr: string) => {
 .topic-message-card.message-assistant {
   border-left-color: rgba(255, 182, 193, 0.25);
   background: rgba(255, 250, 245, 0.5);
+}
+
+/* 叙事式摘要样式 */
+.narrative-summary {
+  margin: 1.25rem 0;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 250, 245, 0.95) 0%, rgba(255, 245, 250, 0.9) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 182, 193, 0.2);
+  box-shadow: 0 2px 8px rgba(255, 182, 193, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.narrative-summary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #FFB6C1 0%, #FFA07A 100%);
+}
+
+.narrative-text {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: #5A4A5A;
+  margin: 0;
+  text-align: justify;
+  letter-spacing: 0.3px;
+  position: relative;
+  z-index: 1;
+}
+
+.narrative-placeholder .narrative-text {
+  color: #A68A8A;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* 展开/收起按钮样式 */
+.toggle-messages-wrapper {
+  margin: 1rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+.toggle-messages-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 182, 193, 0.1);
+  border: 2px solid rgba(255, 182, 193, 0.3);
+  border-radius: 20px;
+  color: #8B6F7E;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.toggle-messages-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.toggle-messages-btn:hover {
+  background: rgba(255, 182, 193, 0.2);
+  border-color: rgba(255, 182, 193, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 182, 193, 0.2);
+}
+
+.toggle-messages-btn:hover::before {
+  left: 100%;
+}
+
+.toggle-messages-btn.expanded {
+  background: rgba(255, 182, 193, 0.15);
+  border-color: rgba(255, 182, 193, 0.4);
+}
+
+.toggle-icon {
+  font-size: 0.8rem;
+  transition: transform 0.3s ease;
+}
+
+.toggle-messages-btn.expanded .toggle-icon {
+  transform: rotate(0deg);
+}
+
+.toggle-text {
+  user-select: none;
 }
 </style>
 

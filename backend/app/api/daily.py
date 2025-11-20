@@ -11,6 +11,9 @@ from app.models import DailySummary, Message
 from app.schemas.daily import DailySummaryItem, DailyListResponse, DailyDetailResponse, TopicGroup
 from app.schemas.message import MessageItem
 from app.schemas.common import ApiResponse, ErrorDetail
+from app.schemas.chat import ChatMessage
+from app.core.provider_factory import get_llm_provider
+from app.services.daily_summary_service import DailySummaryService
 
 router = APIRouter()
 
@@ -116,6 +119,10 @@ async def get_daily_detail(
                 if msg_item.emotion:
                     topic_emotions["其他"].append(msg_item.emotion)
         
+        # 获取 LLM Provider 和 DailySummaryService（用于生成叙事式摘要）
+        llm_provider = get_llm_provider(db=db)
+        summary_service = DailySummaryService(db, llm_provider)
+        
         # 构建主题分组列表
         topic_groups = []
         # 优先使用summary中的main_topics顺序
@@ -135,11 +142,25 @@ async def get_daily_detail(
                         emotion_counts[emo] = emotion_counts.get(emo, 0) + 1
                     emotion_summary = max(emotion_counts.items(), key=lambda x: x[1])[0] if emotion_counts else None
                 
+                # 为该主题的消息生成叙事式摘要
+                topic_messages = topic_groups_dict[topic]
+                # 将 MessageItem 转换为 ChatMessage
+                chat_messages = [
+                    ChatMessage(role=msg.role, content=msg.content)
+                    for msg in topic_messages
+                ]
+                narrative_summary = summary_service.generate_topic_narrative(
+                    topic=topic,
+                    messages=chat_messages,
+                    emotion_summary=emotion_summary
+                )
+                
                 topic_groups.append(TopicGroup(
                     topic=topic,
-                    messages=topic_groups_dict[topic],
+                    messages=topic_messages,
                     emotion_summary=emotion_summary,
-                    message_count=len(topic_groups_dict[topic])
+                    message_count=len(topic_messages),
+                    narrative_summary=narrative_summary
                 ))
                 processed_topics.add(topic)
         
@@ -154,11 +175,23 @@ async def get_daily_detail(
                         emotion_counts[emo] = emotion_counts.get(emo, 0) + 1
                     emotion_summary = max(emotion_counts.items(), key=lambda x: x[1])[0] if emotion_counts else None
                 
+                # 为该主题的消息生成叙事式摘要
+                chat_messages = [
+                    ChatMessage(role=msg.role, content=msg.content)
+                    for msg in msgs
+                ]
+                narrative_summary = summary_service.generate_topic_narrative(
+                    topic=topic,
+                    messages=chat_messages,
+                    emotion_summary=emotion_summary
+                )
+                
                 topic_groups.append(TopicGroup(
                     topic=topic,
                     messages=msgs,
                     emotion_summary=emotion_summary,
-                    message_count=len(msgs)
+                    message_count=len(msgs),
+                    narrative_summary=narrative_summary
                 ))
         
         # 如果没有摘要，返回空数据

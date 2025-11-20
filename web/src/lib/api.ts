@@ -89,6 +89,7 @@ export interface TopicGroup {
   messages: MessageItem[]
   emotion_summary: string | null
   message_count: number
+  narrative_summary: string | null  // 叙事式摘要（将对话转换为连贯的叙事文本）
 }
 
 export interface DailyDetailResponse {
