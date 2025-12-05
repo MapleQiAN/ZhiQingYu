@@ -6,7 +6,8 @@ from typing import Optional, Tuple
 from app.schemas.chat import ChatMessage
 from app.schemas.style import ParsedState
 from app.core.llm_provider import LLMProvider
-from app.core.conversation_algorithm import parse_user_message as rule_based_parse
+# 延迟导入以避免循环导入
+# from app.core.conversation_algorithm import parse_user_message as rule_based_parse
 from app.core.enhanced_emotion_parser import EnhancedEmotionParser, parse_user_message_enhanced
 
 
@@ -53,6 +54,8 @@ def parse_user_message(
         except Exception as e:
             # 增强版失败，回退到规则匹配
             print(f"增强版解析失败，回退到规则匹配: {e}")
+            # 延迟导入以避免循环导入
+            from app.core.conversation_algorithm import parse_user_message as rule_based_parse
             return rule_based_parse(message, history)
     
     # 使用增强版但不启用LLM（只使用多因素强度计算等增强功能）
@@ -63,9 +66,13 @@ def parse_user_message(
             return parsed
         except Exception as e:
             print(f"增强版解析失败，回退到规则匹配: {e}")
+            # 延迟导入以避免循环导入
+            from app.core.conversation_algorithm import parse_user_message as rule_based_parse
             return rule_based_parse(message, history)
     
     # 使用原始规则匹配
+    # 延迟导入以避免循环导入
+    from app.core.conversation_algorithm import parse_user_message as rule_based_parse
     return rule_based_parse(message, history)
 
 
@@ -99,11 +106,15 @@ def parse_user_message_with_confidence(
             )
         except Exception as e:
             print(f"增强版解析失败，回退到规则匹配: {e}")
+            # 延迟导入以避免循环导入
+            from app.core.conversation_algorithm import parse_user_message as rule_based_parse
             parsed = rule_based_parse(message, history)
             # 规则匹配的默认置信度
             return parsed, 0.7
     
     # 规则匹配模式
+    # 延迟导入以避免循环导入
+    from app.core.conversation_algorithm import parse_user_message as rule_based_parse
     parsed = rule_based_parse(message, history)
     return parsed, 0.7  # 规则匹配的默认置信度
 

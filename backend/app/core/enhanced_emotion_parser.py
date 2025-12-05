@@ -9,7 +9,8 @@ from app.schemas.chat import ChatMessage
 from app.schemas.style import ParsedState
 from app.core.llm_provider import LLMProvider
 from app.core.risk_detection import detect_self_harm_keywords, detect_violence_keywords
-from app.core.conversation_algorithm import parse_user_message as rule_based_parse
+# 延迟导入以避免循环导入
+# from app.core.conversation_algorithm import parse_user_message as rule_based_parse
 
 
 # 置信度阈值配置
@@ -99,6 +100,8 @@ class EnhancedEmotionParser:
         history = history or []
         
         # 1. 规则匹配（快速）
+        # 延迟导入以避免循环导入
+        from app.core.conversation_algorithm import parse_user_message as rule_based_parse
         rule_result = rule_based_parse(message, history)
         
         # 2. 计算置信度
